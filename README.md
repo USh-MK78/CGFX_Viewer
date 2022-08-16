@@ -1,5 +1,5 @@
 # CGFX_Viewer
-  
+---  
 This tool is my own personal creation to understand the structure of BCMDL files and for learning purposes.  
 This tool is still a work in progress, but will eventually be able to read and write files.  
 ---  
