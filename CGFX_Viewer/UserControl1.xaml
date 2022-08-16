@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="CGFX_Viewer.UserControl1"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ht="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+             xmlns:local="clr-namespace:CGFX_Viewer"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <!-- ネームスペース -->
+        <!-- xmlns:ht="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf" -->
+        <!-- The HelixViewport3D supports camera manipulation, and can be used just like the Viewport3D -->
+        <!-- <ht:HelixViewport3D><ht:HelixViewport3D/> = ビューポートの作成 -->
+        <!-- ModelUpDirection:モデルの座標(Yが上) -->
+        <ht:HelixViewport3D x:Name="MainViewPort" ModelUpDirection="0,1,0" ShowCoordinateSystem="True" >
+            <!-- <ht:FileModelVisual3D x:Name="LoadModel"/> -->
+            <!-- グリッドの追加(Normal -> グリッドの向き) -->
+            <ht:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01" Normal="0,1,0"/>
+            <!-- モデルの読み込み -->
+            <!-- 光源の追加 -->
+            <ht:DefaultLights/>
+            <!-- カメラの向き(Y) -->
+            <ht:HelixViewport3D.Camera>
+                <PerspectiveCamera UpDirection="0,1,0"/>
+            </ht:HelixViewport3D.Camera>
+        </ht:HelixViewport3D>
+    </Grid>
+</UserControl>
