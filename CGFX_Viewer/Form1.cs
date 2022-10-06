@@ -122,59 +122,35 @@ namespace CGFX_Viewer
                 {
                     var ht = CGFX.DICTAndSectionData[Set[1]].DICT_Entries.Find(x => x.Name == Set[2]).CGFXData.CGFXSectionData;
 
-
                     if (Set[1] == "Model")
                     {
+                        //Dictionary<int, List<ModelVisual3D>> CMDLList = new Dictionary<int, List<ModelVisual3D>>();
+
                         var Models = ht.CMDLSection;
                         propertyGrid3.SelectedObject = new CGFXPropertyGridSet.CMDL_PropertyGrid(Models);
-
-                        List<ModelVisual3D> mList = new List<ModelVisual3D>();
                         foreach (var shape in Models.shapeDatas)
                         {
-                            List<int> vs = new List<int>();
-                            List<Face> faces = new List<Face>();
-                            var Tr = shape.SOBJData.Shapes.primitiveSets;
-                            foreach (var ny in Tr)
-                            {
-                                foreach (var z in ny.Primitives)
-                                {
-                                    foreach (var q in z.IndexStreamCtrList)
-                                    {
-                                        //vs.Add(q.FaceArray);
+                            List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>> indexStreamCtrs = new List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>>();
 
-                                        vs = q.FaceArray;
-                                        faces = q.Faces;
-                                    }
-                                }
+                            var Shape = shape.SOBJData.Shapes;
+                            foreach (var PrimitiveSet in Shape.primitiveSets)
+                            {
+                                var g = PrimitiveSet.Primitives.Select(x => x.IndexStreamCtrList).ToList();
+                                indexStreamCtrs.Add(g);
                             }
 
-
-                            var VertexAttr = shape.SOBJData.Shapes.VertexAttributes;
-                            foreach (var Polygons in VertexAttr)
+                            foreach (var VertexAttr in Shape.VertexAttributes.Select((value, i) => new { Value = value, Index = i }))
                             {
-                                var t = Polygons.Streams.PolygonList;
+                                MeshBuilder meshBuilder = new MeshBuilder(true, true, true);
 
-                                ////FF 80 80 80
-                                //double q = BitConverter.ToDouble(new byte[] { 0x80, 0x80, 0x80, 0xFF }, 0);
+                                foreach (var Indice in indexStreamCtrs[0][0][0].FaceArray) meshBuilder.TriangleIndices.Add(Indice);
 
-                                IList<Point3D> TrPosList = t.Select(x => x.Position).ToList();
-                                IList<Vector3D> TrNorList = t.Select(x => x.Normal).ToList();
-                                IList<System.Windows.Point> TrTexCoordList = t.Select(x => new System.Windows.Point(x.TexCoord.X, x.TexCoord.Y)).ToList();
-                                //IList<int> TrIndicts = vs;
-
-                                MeshBuilder meshBuilder = new MeshBuilder(true, true);
-
-                                for (int y = 0; y < vs.Count; y++)
+                                foreach (var ym in VertexAttr.Value.Streams.PolygonList)
                                 {
-                                    int number = vs[y];
-                                    meshBuilder.TriangleIndices.Add(number);
-                                    meshBuilder.Positions.Add(t[number].Position);
-                                    meshBuilder.Normals.Add(t[number].Normal);
-                                    meshBuilder.TextureCoordinates.Add(new System.Windows.Point(t[number].TexCoord.X, t[number].TexCoord.Y));
+                                    meshBuilder.Positions.Add(ym.Vertex);
+                                    meshBuilder.Normals.Add(ym.Normal);
+                                    meshBuilder.TextureCoordinates.Add(ym.TexCoord.ToPoint());
                                 }
-
-                                //meshBuilder.AddTriangles(TrPosList, TrNorList, TrTexCoordList);
-                                //meshBuilder.AddPolygon(TrIndicts);
 
                                 MeshGeometry3D meshGeometry3D = meshBuilder.ToMesh(true);
 
@@ -187,151 +163,28 @@ namespace CGFX_Viewer
                                 m3dGrp.Children.Add(new GeometryModel3D { Geometry = meshGeometry3D, Material = material, BackMaterial = material });
 
                                 ModelVisual3D m = new ModelVisual3D { Content = m3dGrp };
-                                mList.Add(m);
+                                //mList.Add(m);
 
                                 //表示
                                 render.MainViewPort.Children.Add(m);
 
-                                #region ch
-                                //Int32Collection TriangleIndices = new Int32Collection();
-                                //Point3DCollection point3Ds = new Point3DCollection();
-                                //Vector3DCollection VNormals = new Vector3DCollection();
-                                //PointCollection TexCoords = new PointCollection();
-
-                                //for (int y = 0; y < vs.Count; y++)
+                                #region Point3D Only
+                                //foreach (var ym in VertexAttr.Value.Streams.PolygonList)
                                 //{
-                                //    int number = vs[y];
-                                //    TriangleIndices.Add(number);
-                                //    point3Ds.Add(t[number].Position);
-                                //    VNormals.Add(t[number].Normal);
-                                //    TexCoords.Add(new System.Windows.Point(t[number].TexCoord.X, t[number].TexCoord.Y));
+                                //    List<Point3D> point3Ds = new List<Point3D>();
+                                //    point3Ds.Add(ym.Vertex);
+
+                                //    PointsVisual3D pointsVisual3D = new PointsVisual3D();
+                                //    pointsVisual3D.Points = new Point3DCollection(point3Ds);
+                                //    pointsVisual3D.Color = Colors.Blue;
+                                //    pointsVisual3D.Size = 5;
+
+                                //    render.MainViewPort.Children.Add(pointsVisual3D);
+                                //    render.UpdateLayout();
                                 //}
                                 #endregion
-
-                                //Int32Collection TriangleIndices = new Int32Collection();
-                                //Point3DCollection point3Ds = new Point3DCollection();
-                                //Vector3DCollection VNormals = new Vector3DCollection();
-                                //PointCollection TexCoords = new PointCollection();
-
-                                //for (int y = 0; y < t.Count; y++)
-                                //{
-                                //    //int number = vs[y];
-                                //    //TriangleIndices.Add(number);
-                                //    //TriangleIndices.Add(f)
-                                //    point3Ds.Add(t[y].Position);
-                                //    VNormals.Add(t[y].Normal);
-                                //    TexCoords.Add(new System.Windows.Point(t[y].TexCoord.X, t[y].TexCoord.Y));
-                                //}
-
-                                //TriangleIndices = new Int32Collection(vs);
-
-                                //Material material = MaterialHelper.CreateMaterial(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00));
-
-                                //GeometryModel3D mesh = new GeometryModel3D
-                                //{
-                                //    Geometry = new MeshGeometry3D
-                                //    {
-                                //        TriangleIndices = TriangleIndices,
-                                //        Positions = point3Ds,
-                                //        Normals = VNormals,
-                                //        TextureCoordinates = TexCoords
-                                //    },
-                                //    Material = material,
-                                //    BackMaterial = material
-                                //};
-
-                                //ModelVisual3D modelVisual3D = new ModelVisual3D { Content = mesh };
-
-                                ////表示
-                                //render.MainViewPort.Children.Add(modelVisual3D);
-
                             }
                         }
-
-
-
-                        //List<ModelVisual3D> mList = new List<ModelVisual3D>();
-                        //foreach (var shape in Models.shapeDatas)
-                        //{
-                        //    //List<int> vs = new List<int>();
-
-
-                        //    //var Tr = shape.SOBJData.Shapes.primitiveSets;
-                        //    //foreach (var ny in Tr)
-                        //    //{
-                        //    //    foreach (var z in ny.Primitives)
-                        //    //    {
-                        //    //        foreach (var q in z.IndexStreamCtrList)
-                        //    //        {
-                        //    //            //vs.Add(q.FaceArray);
-
-                        //    //            vs = q.FaceArray;
-                        //    //        }
-                        //    //    }
-                        //    //}
-
-
-                        //    var VertexAttr = shape.SOBJData.Shapes.VertexAttributes;
-                        //    foreach (var Polygons in VertexAttr)
-                        //    {
-                        //        var t = Polygons.Streams.PolygonList;
-
-                        //        IList<Point3D> TrPosList = t.Select(x => x.Position.ToPoint3D()).ToList();
-                        //        IList<Vector3D> TrNorList = t.Select(x => x.Normal).ToList();
-                        //        IList<System.Windows.Point> TrTexCoordList = t.Select(x => new System.Windows.Point(x.TexCoord.X, x.TexCoord.Y)).ToList();
-                        //        //IList<int> TrIndicts = vs;
-
-                        //        MeshBuilder meshBuilder = new MeshBuilder(true, true);
-                        //        meshBuilder.AddTriangles(TrPosList, TrNorList, TrTexCoordList);
-                        //        //meshBuilder.AddPolygon(TrIndicts);
-
-                        //        MeshGeometry3D meshGeometry3D = meshBuilder.ToMesh(true);
-
-                        //        //BitmapImage bitmapImage = (BitmapImage)Imaging.CreateBitmapSourceFromHBitmap(ht.TXOBSection.TXOB_Bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                        //        //Material material = MaterialHelper.CreateImageMaterial(bitmapImage, 1, true);
-
-                        //        Material material = MaterialHelper.CreateMaterial(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00));
-
-                        //        var m3dGrp = new Model3DGroup();
-                        //        m3dGrp.Children.Add(new GeometryModel3D { Geometry = meshGeometry3D, Material = material, BackMaterial = material });
-
-                        //        ModelVisual3D m = new ModelVisual3D { Content = m3dGrp };
-                        //        mList.Add(m);
-
-                        //        //表示
-                        //        render.MainViewPort.Children.Add(m);
-                        //    }
-                        //}
-
-
-                        //List<ModelVisual3D> mList = new List<ModelVisual3D>();
-                        //foreach (var shape in Models.shapeDatas)
-                        //{
-                        //	var VertexAttr = shape.SOBJData.Shapes.VertexAttributes;
-                        //	foreach (var Polygons in VertexAttr)
-                        //	{
-                        //		var t = Polygons.Streams.PolygonList;
-
-                        //		IList<Point3D> TrPosList = t.Select(x => x.Position.ToPoint3D()).ToList();
-                        //		IList<Vector3D> TrNorList = t.Select(x => x.Normal).ToList();
-                        //		IList<System.Windows.Point> TrTexCoordList = t.Select(x => new System.Windows.Point(x.TexCoord.X, x.TexCoord.Y)).ToList();
-
-                        //		MeshBuilder meshBuilder = new MeshBuilder();
-                        //		meshBuilder.AddTriangles(TrPosList, TrNorList, TrTexCoordList);
-
-                        //		MeshGeometry3D meshGeometry3D = meshBuilder.ToMesh(true);
-
-                        //		BitmapImage bitmapImage = (BitmapImage)Imaging.CreateBitmapSourceFromHBitmap(ht.TXOBSection.TXOB_Bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                        //		Material material = MaterialHelper.CreateImageMaterial(bitmapImage, 1, true);
-
-                        //		var m3dGrp = new Model3DGroup();
-                        //		m3dGrp.Children.Add(new GeometryModel3D { Geometry = meshGeometry3D, Material = material, BackMaterial = material });
-
-                        //		ModelVisual3D m = new ModelVisual3D { Content = m3dGrp };
-                        //		mList.Add(m);
-                        //	}
-                        //}
-
                     }
                     if (Set[1] == "Textures")
                     {

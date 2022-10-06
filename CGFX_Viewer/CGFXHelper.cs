@@ -291,6 +291,87 @@ namespace CGFX_Viewer
         }
 	}
 
+
+    public class VertexAttribute
+    {
+        public class Usage
+        {
+            public int TypeNum { get; set; }
+            public UsageType UsageTypes => (UsageType)TypeNum;
+
+            public Usage(int InputUsageTypeNum)
+            {
+                TypeNum = InputUsageTypeNum;
+            }
+
+            public Usage(UsageType usageType)
+            {
+                TypeNum = (int)usageType;
+            }
+
+            public int GetComponentCount()
+            {
+                int n = -1;
+                if (UsageTypes == UsageType.Position) n = 3;
+                if (UsageTypes == UsageType.Normal) n = 3;
+                if (UsageTypes == UsageType.Tangent) n = 3;
+                if (UsageTypes == UsageType.Color) n = 4;
+                if (UsageTypes == UsageType.TextureCoordinate0) n = 2;
+                if (UsageTypes == UsageType.TextureCoordinate1) n = 2;
+                if (UsageTypes == UsageType.TextureCoordinate2) n = 2;
+                return n;
+            }
+
+            public enum UsageType
+            {
+                Position = 0,
+                Normal = 1,
+                Tangent = 2,
+                Color = 3,
+                TextureCoordinate0 = 4,
+                TextureCoordinate1 = 5,
+                TextureCoordinate2 = 6,
+                BoneIndex = 7,
+                BoneWeight = 8,
+                UserAttribute0 = 9,
+                UserAttribute1 = 10,
+                UserAttribute2 = 11,
+                UserAttribute3 = 12,
+                UserAttribute4 = 13,
+                UserAttribute5 = 14,
+                UserAttribute6 = 15,
+                UserAttribute7 = 16,
+                UserAttribute8 = 17,
+                UserAttribute9 = 18,
+                UserAttribute10 = 19,
+                UserAttribute11 = 20,
+                Interleave = 21,
+                Quantity = 22
+            }
+        }
+
+        public class Flag
+        {
+            public int FlagNum { get; set; }
+
+            public Flag(int InputFlagTypeNum)
+            {
+                FlagNum = InputFlagTypeNum;
+            }
+
+            public Flag(FlagType flagType)
+            {
+                FlagNum = (int)flagType;
+            }
+
+            public enum FlagType
+            {
+                VertexParam = 1,
+                Interleave = 2
+            }
+        }
+    }
+
     public class TaskHelper
 	{
         public static Task<T> RunTask<T>(object obj)
@@ -471,6 +552,11 @@ namespace CGFX_Viewer
         public int f1 { get; set; }
         public int f2 { get; set; }
 
+        public IList<int> FaceToTriangle()
+        {
+            return new int[] { f0, f1, f2 }.ToList();
+        }
+
         public Face(int i0, int i1, int i2)
         {
             this.f0 = i0;
@@ -539,6 +625,247 @@ namespace CGFX_Viewer
 
         //              return vector3D;
         //          }
+        //}
+    }
+
+    public class CGFXHelper
+    {
+        //public CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType
+
+        //public static T Calc<T>(T Data, int Offset, float Scale, CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType formatType)
+        //{
+        //    //switch (v.FormatType)
+        //    //{
+        //    //    case DataType.GL_BYTE:
+        //    //        Vars[q] = (sbyte)VertexData[Offset + (int)v.Offset + offs_] * v.Scale;
+        //    //        offs_++;
+        //    //        break;
+        //    //    case DataType.GL_UNSIGNED_BYTE:
+        //    //        Vars[q] = VertexData[Offset + (int)v.Offset + offs_] * v.Scale;
+        //    //        offs_++;
+        //    //        break;
+        //    //    case DataType.GL_SHORT:
+        //    //        Vars[q] = IOUtil.ReadS16LE(VertexData, Offset + (int)v.Offset + offs_) * v.Scale;
+        //    //        offs_ += 2;
+        //    //        break;
+        //    //    case DataType.GL_FLOAT:
+        //    //        Vars[q] = BitConverter.ToSingle(VertexData, Offset + (int)v.Offset + offs_);
+        //    //        offs_ += 4;
+        //    //        break;
+        //    //}
+
+        //    T conv = Data;
+
+        //    Vector3D vector3D;
+        //    Point3D point3D;
+        //    Polygon.TextureCoordinate textureCoordinate;
+        //    Polygon.Color color;
+
+        //    if ((Vector3D)Data)
+
+        //    //Offset -> VertexDataEntrySize, offs_ -> Vector3D
+        //    if (formatType == CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType.BYTE)
+        //    {
+        //        conv = (sbyte)VertexData[Offset + (int)v.Offset + offs_] * Scale;
+        //    }
+        //    if (formatType == CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType.UNSIGNED_BYTE)
+        //    {
+
+        //    }
+        //    if (formatType == CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType.SHORT)
+        //    {
+
+        //    }
+        //    if (formatType == CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType.FLOAT)
+        //    {
+
+        //    }
+        //}
+
+        //public static List<List<Polygon>> FaceToPolygon(List<Face> faces, List<Polygon> polygons)
+        //{
+        //    List<List<Polygon>> polygons1 = new List<List<Polygon>>();
+
+        //    foreach (var f in faces)
+        //    {
+        //        List<Polygon> polygons2 = new List<Polygon>();
+
+        //        var ary = f.FaceToTriangle();
+
+        //        foreach (var d in ary)
+        //        {
+
+        //        }
+        //    }
+        //}
+
+
+        public static int GetIndiceNum(List<int> FaceArray, int Num, List<Polygon> polygons)
+        {
+            int fe = -1;
+            if (Num < polygons.Count)
+            {
+                fe = Num;
+            }
+            else if (Num >= polygons.Count)
+            {
+                foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i }))
+                {
+                    if (Num == jr.Index)
+                    {
+                        int f = jr.Value;
+                        if (f < polygons.Count)
+                        {
+                            fe = f;
+                            break;
+                        }
+                        else
+                        {
+                            fe = GetIndiceNum(FaceArray, f, polygons);
+                            break;
+                        }
+                        //fe = jr.Value < FaceArray.Count ? jr.Value : GetIndiceNum(FaceArray, jr.Value);
+                        //break;
+                    }
+                    //if (Num >= FaceArray.Count)
+                    //{
+                    //    fe = GetIndiceNum(FaceArray, Num);
+
+                    //}
+                }
+
+                return fe;
+                //fe = GetIndiceNum(FaceArray, Num);
+
+            }
+
+
+
+
+
+
+            //foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i}))
+            //{
+            //    if (Num < FaceArray.Count)
+            //    {
+            //        fe = Num;
+            //        break;
+            //    }
+            //    if (Num >= FaceArray.Count)
+            //    {
+            //        fe = GetIndiceNum(FaceArray, Num);
+
+            //    }
+            //}
+
+            return fe;
+        }
+
+
+        //public static int GetIndiceNum(List<int> FaceArray, int Num)
+        //{
+        //    int fe = Num;
+        //    //if (FaceArray.ToList().Count <= fe)
+        //    //{
+        //    //    return fe;
+        //    //}
+        //    if (FaceArray.ToList().Count >= Num)
+        //    {
+        //        fe = GetIndiceNum(FaceArray, fe);
+        //    }
+        //    else
+        //    {
+        //        return fe;
+        //    }
+
+        //    return fe;
+        //}
+
+        //public static Task<int> GetIndiceNum(int h, List<Polygon> polygons, List<int> FaceArray)
+        //{
+        //    if (polygons.Count - 1 >= h)
+        //    {
+        //        return Task.FromResult(h);
+        //    }
+
+        //    return Task.FromResult(GetIndiceNum(FaceArray[h], polygons, FaceArray).Result);
+        //}
+
+        //public static int GetIndiceNum(int h, List<Polygon> polygons, List<int> FaceArray)
+        //{
+        //    int r = h;
+        //    if (polygons.Count - 1 <= r) r = GetIndiceNum(FaceArray[h], polygons, FaceArray);
+        //    return r;
+        //}
+
+        //public static Polygon GetPolygon(int j, List<Polygon> polygons, List<int> FaceAry)
+        //{
+        //    return polygons[GetIndiceNum(j, polygons, FaceAry)];
+        //}
+
+        //public static Polygon GetPolygon(int IndiceNum, List<Polygon> PolygonList, List<int> FaceArray, IList<int> FtoAry)
+        //{
+        //    for (int fc = 0; fc < FtoAry.Count; fc++)
+        //    {
+        //        int num = FtoAry[fc];
+        //        //if (PolygonList.Count - 1 < num)
+        //        //{
+        //        //    var finr = faceAry[num];
+        //        //    meshBuilder.Positions.Add(PolygonList[finr].Position);
+        //        //    meshBuilder.Normals.Add(PolygonList[finr].Normal);
+        //        //    meshBuilder.TextureCoordinates.Add(PolygonList[finr].TexCoord.ToPoint());
+        //        //}
+        //        if (PolygonList.Count - 1 >= num)
+        //        {
+        //            meshBuilder.Positions.Add(PolygonList[num].Position);
+        //            meshBuilder.Normals.Add(PolygonList[num].Normal);
+        //            meshBuilder.TextureCoordinates.Add(PolygonList[num].TexCoord.ToPoint());
+        //        }
+        //    }
+        //}
+
+        //public static Polygon GetPolygon(int IndiceNum, List<Polygon> polygons, List<int> FaceArray)
+        //{
+        //    Polygon polygon = new Polygon();
+
+        //    if (polygons.Count - 1 < IndiceNum)
+        //    {
+        //        polygon = CGFXHelper.GetPolygon(FaceArray[IndiceNum], polygons, FaceArray);
+        //    }
+        //    if (polygons.Count - 1 >= IndiceNum)
+        //    {
+        //        polygon = polygons[IndiceNum];
+        //    }
+
+        //    return polygon;
+        //}
+
+        //public static Polygon GetPolygon(int FaceNum, List<Polygon> polygons, IList<int> Triangle, List<int> FaceArray)
+        //{
+        //    Polygon polygon = null;
+
+        //    for (int i = 0; i < Triangle.Count; i++)
+        //    {
+        //        //int n = Triangle[i];
+        //        if (polygons.Count - 1 < FaceNum)
+        //        {
+        //            polygon = CGFXHelper.GetPolygon(FaceArray[FaceNum], polygons, Triangle, FaceArray);
+
+        //            //var finr = FaceArray[n];
+        //            //meshBuilder.Positions.Add(polygons[finr].Position);
+        //            //meshBuilder.Normals.Add(dgr[finr].Normal);
+        //            //meshBuilder.TextureCoordinates.Add(dgr[finr].TexCoord.ToPoint());
+        //        }
+        //        if (polygons.Count - 1 >= FaceNum)
+        //        {
+        //            //polygon = new Polygon();
+        //            polygon = polygons[FaceNum];
+        //        }
+        //    }
+
+
+
+        //    return polygon;
         //}
     }
 
@@ -623,14 +950,45 @@ namespace CGFX_Viewer
     public class Polygon
     {
         //public Vector3D Position { get; set; }
-        public Point3D Position { get; set; }
+        //public Point3D Position { get; set; }
+        public Point3D Vertex { get; set; }
         public Vector3D Normal { get; set; }
+        //public Vector3D Tangent { get; set; }
         public TextureCoordinate TexCoord { get; set; }
+        public TextureCoordinate TexCoord2 { get; set; }
+        public TextureCoordinate TexCoord3 { get; set; }
+        public Color ColorData { get; set; }
+
+        public struct Color
+        {
+            public byte R;
+            public byte G;
+            public byte B;
+            public byte A;
+
+            //public System.Windows.Media.Colors ToRGBA()
+            //{
+
+            //}
+
+            public Color(byte ColorR, byte ColorG, byte ColorB, byte ColorA)
+            {
+                R = ColorR;
+                G = ColorG;
+                B = ColorB;
+                A = ColorA;
+            }
+        }
 
         public struct TextureCoordinate
         {
             public double X;
             public double Y;
+
+            public System.Windows.Point ToPoint()
+            {
+                return new System.Windows.Point(X, Y);
+            }
 
             public TextureCoordinate(double pX, double pY)
             {
@@ -639,12 +997,30 @@ namespace CGFX_Viewer
             }
         }
 
+        public void UpToY()
+        {
+            Vertex = new Point3D(Vertex.X, Vertex.Z, Vertex.Y);
+        }
+
+        public Polygon(Point3D Vt, Vector3D Nr, TextureCoordinate TexCoord_0, TextureCoordinate TexCoord_1, TextureCoordinate TexCoord_2, Color color)
+        {
+            Vertex = Vt;
+            Normal = Nr;
+            TexCoord = TexCoord_0;
+            TexCoord2 = TexCoord_1;
+            TexCoord3 = TexCoord_2;
+            ColorData = color;
+        }
+
         public Polygon()
         {
             //Position = new Vector3D();
-            Position = new Point3D();
+            Vertex = new Point3D();
             Normal = new Vector3D();
             TexCoord = new TextureCoordinate();
+            TexCoord2 = new TextureCoordinate();
+            TexCoord3 = new TextureCoordinate();
+            ColorData = new Color();
         }
     }
 }

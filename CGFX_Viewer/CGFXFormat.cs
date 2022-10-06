@@ -2441,13 +2441,26 @@ namespace CGFX_Viewer
                         public int LocationAddress { get; set; } //VertexStreamOffset seems to be used when this one is 0...
                         public int MemoryArea { get; set; }
                         public List<Polygon> PolygonList { get; set; }
+
+                        public int UnknownData1 { get; set; }
+                        public int UnknownData2 { get; set; }
+
                         public int VertexDataEntrySize { get; set; }
                         public int NrVertexStreams { get; set; }
                         public int VertexStreamsOffsetListOffset { get; set; }
                         public List<VertexStream> VertexStreams { get; set; }
                         public class VertexStream
 						{
-                            //public int VertexStreamsOffset { get; set; }
+                            public int VertexStreamsOffset { get; set; }
+
+                            public Flags Flags { get; set; }
+                            //public int VertexAttributeUsageNum { get; set; }
+                            //public CGFX_Viewer.VertexAttribute.Usage.UsageType VertexAttributeUsageFlag => (CGFX_Viewer.VertexAttribute.Usage.UsageType)VertexAttributeUsageNum;
+                            //public int VertexAttributeFlagNum { get; set; }
+                            //public CGFX_Viewer.VertexAttribute.Flag.FlagType VertexAttributeFlag => (CGFX_Viewer.VertexAttribute.Flag.FlagType)VertexAttributeFlagNum;
+                            public CGFX_Viewer.VertexAttribute.Usage VertexAttributeUsageFlag { get; set; }
+                            public CGFX_Viewer.VertexAttribute.Flag VertexAttributeFlag { get; set; }
+
                             public int BufferObject { get; set; }
                             public int LocationFlag { get; set; } //0x10
                             public int VertexStreamLength { get; set; }
@@ -2473,8 +2486,26 @@ namespace CGFX_Viewer
                                     FLOAT = 6
                                 }
 
+                                public int GetFormatTypeLength()
+                                {
+                                    int n = -1;
+                                    if (FormatTypes == FormatType.BYTE || FormatTypes == FormatType.UNSIGNED_BYTE) n = 1;
+                                    if (FormatTypes == FormatType.SHORT) n = 2;
+                                    if (FormatTypes == FormatType.FLOAT) n = 4;
+                                    return n;
+                                }
+
                                 //public int FormatType { get; set; }
                                 public int ComponentCount { get; set; } //For example XYZ = 3, ST = 2, RGBA = 4
+
+                                public ComponentType ComponentTypeFlag => (ComponentType)ComponentCount;
+                                public enum ComponentType
+                                {
+                                    ST = 2,
+                                    XYZ = 3,
+                                    RGBA = 4
+                                }
+
                                 //public List<float> Vs { get; set; }
 
 
@@ -2501,51 +2532,51 @@ namespace CGFX_Viewer
 
                             public void ReadVertexData(BinaryReader br, byte[] BOM)
                             {
-								//                        EndianConvert endianConvert = new EndianConvert(BOM);
-								//                        VertexStreamsOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                        if (VertexStreamsOffset != 0)
-								//{
-								//                            long Pos = br.BaseStream.Position;
+                                EndianConvert endianConvert = new EndianConvert(BOM);
+                                VertexStreamsOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                if (VertexStreamsOffset != 0)
+                                {
+                                    long Pos = br.BaseStream.Position;
 
-								//                            br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
 
-								//                            //Move NameOffset
-								//                            br.BaseStream.Seek(VertexStreamsOffset, SeekOrigin.Current);
+                                    //Move NameOffset
+                                    br.BaseStream.Seek(VertexStreamsOffset, SeekOrigin.Current);
 
-								//                            BufferObject = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            LocationFlag = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            VertexStreamLength = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            VertexStreamOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            if (VertexStreamOffset != 0) return; //Unused(?)
-								//                            LocationAddress = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            MemoryArea = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            Components.ReadComponent(br, BOM);
-								//                            //FormatType = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            //ComponentCount = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            Scale = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//                            Offset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    Flags = new Flags(br.ReadBytes(4));
+                                    //VertexAttributeUsageNum = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    //VertexAttributeFlagNum = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    VertexAttributeUsageFlag = new CGFX_Viewer.VertexAttribute.Usage(BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0));
+                                    VertexAttributeFlag = new CGFX_Viewer.VertexAttribute.Flag(BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0));
 
-								//                            br.BaseStream.Position = Pos;
-								//                        }
 
-								EndianConvert endianConvert = new EndianConvert(BOM);
-								BufferObject = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								LocationFlag = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								VertexStreamLength = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								VertexStreamOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								if (VertexStreamOffset != 0) return; //Unused(?)
-								LocationAddress = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								MemoryArea = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								Components.ReadComponent(br, BOM);
-								//FormatType = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								//ComponentCount = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-								Scale = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
-								Offset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-							}
+                                    BufferObject = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    LocationFlag = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    VertexStreamLength = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    VertexStreamOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    if (VertexStreamOffset != 0) return; //Unused(?)
+                                    LocationAddress = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    MemoryArea = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    Components.ReadComponent(br, BOM);
+                                    //FormatType = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    //ComponentCount = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    Scale = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                                    Offset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                                    br.BaseStream.Position = Pos;
+                                }
+                            }
 
                             public VertexStream()
                             {
-                                //VertexStreamsOffset = 0;
+                                VertexStreamsOffset = 0;
+
+                                Flags = new Flags(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+                                //VertexAttributeUsageNum = 0;
+                                //VertexAttributeFlagNum = 0;
+                                VertexAttributeUsageFlag = new CGFX_Viewer.VertexAttribute.Usage(-1);
+                                VertexAttributeFlag = new CGFX_Viewer.VertexAttribute.Flag(-1);
+
                                 BufferObject = 0;
                                 LocationFlag = 0;
                                 VertexStreamLength = 0;
@@ -2752,46 +2783,46 @@ namespace CGFX_Viewer
                                 br.BaseStream.Position = Pos;
                             }
 
-                            LocationAddress = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0); //DataSize
                             MemoryArea = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0); //DataOffset
-                            if (MemoryArea != 0)
-                            {
-                                long Pos = br.BaseStream.Position;
+                            LocationAddress = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0); //DataSize
+                            
+                            long Pos1 = MemoryArea != 0 ? br.BaseStream.Position : 0;
 
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
+                            #region Del
+                            //if (MemoryArea != 0)
+                            //{
+                            //    long Pos = br.BaseStream.Position;
 
-                                //Move NameOffset
-                                br.BaseStream.Seek(MemoryArea, SeekOrigin.Current);
+                            //    br.BaseStream.Seek(-4, SeekOrigin.Current);
 
-                                int PolygonCount = LocationAddress / 32; //Position, Normal, TextureCoordinate
-                                for (int i = 0; i < PolygonCount; i++)
-                                {
-                                    //Polygon polygon = new Polygon()
-                                    //{
-                                    //    Position = Converter.ByteArrayToPoint3D(new byte[][] { br.ReadBytes(4), br.ReadBytes(4), br.ReadBytes(4) }),
-                                    //    Normal = Converter.ByteArrayToVector3D(new byte[][] { br.ReadBytes(4), br.ReadBytes(4), br.ReadBytes(4) }),
-                                    //    TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(br.ReadBytes(4), 0), BitConverter.ToSingle(br.ReadBytes(4), 0))
-                                    //};
+                            //    //Move NameOffset
+                            //    br.BaseStream.Seek(MemoryArea, SeekOrigin.Current);
 
-                                    Polygon polygon = new Polygon()
-                                    {
-                                        Position = Converter.ByteArrayToPoint3D(new byte[][] { endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)) }),
-                                        Normal = Converter.ByteArrayToVector3D(new byte[][] { endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)) }),
-                                        TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0))
-                                    };
+                            //    int PolygonCount = LocationAddress / 32; //Position, Normal, TextureCoordinate
+                            //    for (int i = 0; i < PolygonCount; i++)
+                            //    {
+                            //        Polygon polygon = new Polygon()
+                            //        {
+                            //            Vertex = Converter.ByteArrayToPoint3D(new byte[][] { endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)) }),
+                            //            Normal = Converter.ByteArrayToVector3D(new byte[][] { endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)), endianConvert.Convert(br.ReadBytes(4)) }),
+                            //            TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0))
+                            //        };
 
-                                    PolygonList.Add(polygon);
-                                }
+                            //        PolygonList.Add(polygon);
+                            //    }
 
-                                br.BaseStream.Position = Pos;
-                            }
+                            //    br.BaseStream.Position = Pos;
+                            //}
+                            #endregion
+
+                            //8byte(?)
+                            UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 
 
                             VertexDataEntrySize = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                             NrVertexStreams = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                             VertexStreamsOffsetListOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-
-
                             if (VertexStreamsOffsetListOffset != 0)
 							{
                                 long Pos = br.BaseStream.Position;
@@ -2810,6 +2841,71 @@ namespace CGFX_Viewer
 
                                 br.BaseStream.Position = Pos;
                             }
+
+                            if (VertexStreamOffset == 0)
+                            {
+                                int AllComponentLength = 0;
+                                foreach (var tr in VertexStreams) AllComponentLength += tr.Components.ComponentCount * tr.Components.GetFormatTypeLength();
+                                var Count = MemoryArea / AllComponentLength;
+
+                                br.BaseStream.Position = Pos1;
+
+                                br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                                //Move NameOffset
+                                br.BaseStream.Seek(LocationAddress, SeekOrigin.Current);
+
+                                for (int iu = 0; iu < Count; iu++)
+                                {
+                                    Polygon polygon1 = new Polygon();
+
+                                    foreach (var h in VertexStreams)
+                                    {
+                                        var g = h.VertexAttributeFlag;
+
+                                        int CompCount = h.Components.GetFormatTypeLength();
+
+                                        if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Position)
+                                        {
+                                            polygon1.Vertex = Converter.ByteArrayToPoint3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Normal)
+                                        {
+                                            polygon1.Normal = Converter.ByteArrayToVector3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Tangent)
+                                        {
+                                            return;
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate0)
+                                        {
+                                            polygon1.TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate1)
+                                        {
+                                            polygon1.TexCoord2 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate2)
+                                        {
+                                            polygon1.TexCoord3 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                        }
+                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Color)
+                                        {
+                                            polygon1.ColorData = new Polygon.Color(br.ReadByte(), br.ReadByte(), br.ReadByte(), br.ReadByte());
+                                        }
+                                    }
+
+                                    PolygonList.Add(polygon1);
+                                }
+
+                            }
+                            if (VertexStreamOffset != 0)
+                            {
+                                var f = VertexStreamLength / VertexDataEntrySize;
+                            }
+
+                            ////int q = VertexStreamLength / VertexDataEntrySize;
+
                         }
 
                         public Stream()
@@ -2822,6 +2918,10 @@ namespace CGFX_Viewer
                             LocationAddress = 0;
                             MemoryArea = 0;
                             PolygonList = new List<Polygon>();
+
+                            UnknownData1 = 0;
+                            UnknownData2 = 0;
+
                             VertexDataEntrySize = 0;
                             NrVertexStreams = 0;
                             VertexStreamsOffsetListOffset = 0;
@@ -2861,6 +2961,8 @@ namespace CGFX_Viewer
                                 AttributeList = s.ToList();
 
                                 br.BaseStream.Position = Pos;
+
+
                             }
                         }
 
