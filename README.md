@@ -6,6 +6,7 @@ This tool is still a work in progress, but will eventually be able to read and w
 We don't know when it will be completed, as we are prioritizing our real-life plans, but it would be very helpful if you could sit back with a cup of coffee and watch it quietly.  
   
 *About the build environment*  
+LibEveryFileExplorer.dll  
 HelixToolkit v2.12.0  
 HelixToolkit.Wpf v2.12.0  
 Visual Studio 2019  
