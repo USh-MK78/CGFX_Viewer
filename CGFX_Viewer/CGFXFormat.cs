@@ -198,7 +198,7 @@ namespace CGFX_Viewer
                 public int DataOffset { get; set; } //0x4
                 public CGFXData CGFXData { get; set; }
 
-				public void Read_DICTEntry(BinaryReader br, byte[] BOM)
+				public void Read_DICTEntry(BinaryReader br, byte[] BOM, bool IdentFlag)
                 {
                     EndianConvert endianConvert = new EndianConvert(BOM);
                     RefBit = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
@@ -232,8 +232,16 @@ namespace CGFX_Viewer
                         //Move DataOffset
                         br.BaseStream.Seek(DataOffset, SeekOrigin.Current);
 
-                        CGFXData = new CGFXData(br.ReadBytes(4));
-                        CGFXData.Reader(br, BOM);
+                        if (IdentFlag == true)
+                        {
+                            CGFXData = new CGFXData(br.ReadBytes(4));
+                            CGFXData.Reader(br, BOM);
+                        }
+                        if (IdentFlag == false)
+                        {
+                            CGFXData = new CGFXData(null);
+                            CGFXData.Reader(br, BOM);
+                        }
 
 						br.BaseStream.Position = Pos;
                     }
@@ -269,7 +277,7 @@ namespace CGFX_Viewer
                 DICT_Entries = new List<DICT_Entry>();
             }
 
-            public void ReadDICT(BinaryReader br, byte[] BOM)
+            public void ReadDICT(BinaryReader br, byte[] BOM, bool IdentFlag = true)
             {
                 EndianConvert endianConvert = new EndianConvert(BOM);
                 DICT_Header = br.ReadChars(4);
@@ -282,7 +290,7 @@ namespace CGFX_Viewer
                 for (int i = 0; i < DICT_NumOfEntries; i++)
                 {
                     DICT_Entry dICT_Entry = new DICT_Entry();
-                    dICT_Entry.Read_DICTEntry(br, BOM);
+                    dICT_Entry.Read_DICTEntry(br, BOM, IdentFlag);
                     DICT_Entries.Add(dICT_Entry);
                 }
             }
@@ -814,7 +822,7 @@ namespace CGFX_Viewer
 
                 public byte[] UnknownData2 { get; set; }
                 public int LayerID { get; set; }
-                public byte[] UnknownData4 { get; set; }
+                //public byte[] UnknownData4 { get; set; }
 
                 //public CMDL_SkeletonInfo CMDLSkeletonInfo { get; set; }
                 //public class CMDL_SkeletonInfo
@@ -964,6 +972,7 @@ namespace CGFX_Viewer
                         br.BaseStream.Position = Pos;
                     }
 
+                    //SHDR
                     NumOfUnknownDICTEntries = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                     UnknownDICTOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                     if (UnknownDICTOffset != 0)
@@ -976,7 +985,7 @@ namespace CGFX_Viewer
                         br.BaseStream.Seek(UnknownDICTOffset, SeekOrigin.Current);
 
                         //No IdentFlag, NameOffset(0x4), Unknown(0x4)
-                        UnknownDICT.ReadDICT(br, BOM);
+                        UnknownDICT.ReadDICT(br, BOM, false);
 
                         br.BaseStream.Position = Pos;
                     }
@@ -987,7 +996,7 @@ namespace CGFX_Viewer
 
                     UnknownData2 = endianConvert.Convert(br.ReadBytes(4));
                     LayerID = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-                    UnknownData4 = endianConvert.Convert(br.ReadBytes(4));
+                    //UnknownData4 = endianConvert.Convert(br.ReadBytes(4));
                 }
 
                 public CMDL()
@@ -1026,7 +1035,7 @@ namespace CGFX_Viewer
                     UnknownData3 = new List<byte>().ToArray();
                     UnknownData2 = new List<byte>().ToArray();
                     LayerID = 0;
-                    UnknownData4 = new List<byte>().ToArray();
+                    //UnknownData4 = new List<byte>().ToArray();
                 }
             }
 
@@ -1203,10 +1212,801 @@ namespace CGFX_Viewer
             }
 
             //LUTS
+            public LUTS LUTSSection { get; set; } //0x00000004
+            public class LUTS
+            {
+                public string Name;
+
+                public char[] LUTS_Header { get; set; }
+                public byte[] Revision { get; set; }
+                public int NameOffset { get; set; }
+                public int UnknownData1 { get; set; }
+                public int UnknownData2 { get; set; }
+                public int NumOfDICTEntries { get; set; }
+                public int DICTEntriesOffset { get; set; }
+                public List<DICT> DICTList { get; set; } //LUTData => 0x00000080
+
+                public class LoolupTableData
+                {
+                    public string Name;
+                    public Flags Flags { get; set; } //0x4
+                    public int NameOffset { get; set; } //0x4
+                    public bool IsAbsoluteValue { get; set; } //0x4
+                    public int UnknownOffset { get; set; }
+                    public int UnknownData1 { get; set; }
+                    public int UnknownData2 { get; set; }
+
+                    public byte[] UnknownData3 { get; set; }
+
+                    public int UnknownData4 { get; set; }
+                    public int UnknownData5 { get; set; }
+                    public int UnknownData6 { get; set; }
+                    public int UnknownData7 { get; set; }
+
+                    //UnknownList<float> (?)
+                }
+
+                //public List<LookUpTable> LookUpTables { get; set; }
+                //public class LookUpTable
+                //{
+
+                //}
+
+
+                //public List<>
+
+                //public List<DICT> DICTList { get; set; }
+
+
+                public void ReadLUTS(BinaryReader br, byte[] BOM)
+                {
+                    EndianConvert endianConvert = new EndianConvert(BOM);
+                    LUTS_Header = br.ReadChars(4);
+                    if (new string(LUTS_Header) != "LUTS") throw new Exception("不明なフォーマットです");
+
+                    Revision = endianConvert.Convert(br.ReadBytes(4));
+                    NameOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    if (NameOffset != 0)
+                    {
+                        long Pos = br.BaseStream.Position;
+
+                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                        //Move NameOffset
+                        br.BaseStream.Seek(NameOffset, SeekOrigin.Current);
+
+                        ReadByteLine readByteLine = new ReadByteLine(new List<byte>());
+                        readByteLine.ReadByte(br, 0x00);
+
+                        Name = new string(readByteLine.ConvertToCharArray());
+
+                        br.BaseStream.Position = Pos;
+                    }
+                }
+
+                public LUTS()
+                {
+
+                }
+            }
+
+
             //Materials
+            public MTOB MTOBSection { get; set; } //0x00000008
+            public class MTOB
+            {
+                public string Name;
+
+                public char[] MTOB_Header { get; set; }
+                public byte[] Revision { get; set; }
+                public int NameOffset { get; set; }
+
+                public int UnknownData1 { get; set; }
+                public int UnknownData2 { get; set; }
+                public int IsFragmentLighting { get; set; }
+                public int UnknownData4 { get; set; }
+                public int DrawingLayer { get; set; }
+
+                //MaterialColor
+                public MaterialColor MaterialColors { get; set; }
+                public class MaterialColor
+                {
+                    public Emission EmissionData { get; set; }
+                    public class Emission
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+
+                        public void ReadEmissionColor(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Emission(float Input_R, float Input_G, float Input_B)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                        }
+
+                        public Emission()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                        }
+                    }
+
+                    public int UnknownData1 { get; set; } //Emission Alpha (?)
+
+                    public Ambient AmbientData { get; set; }
+                    public class Ambient
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+
+                        public void ReadAmbientColor(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Ambient(float Input_R, float Input_G, float Input_B)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                        }
+
+                        public Ambient()
+                        {
+                            R = 1;
+                            G = 1;
+                            B = 1;
+                        }
+                    }
+
+                    public int UnknownData2 { get; set; } //Ambient Alpha (?)
+
+                    public Diffuse DiffuseData { get; set; }
+                    public class Diffuse
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadDiffuseColor(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Diffuse(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Diffuse()
+                        {
+                            R = 1;
+                            G = 1;
+                            B = 1;
+                            A = 1;
+                        }
+                    }
+
+                    public Speculer0 Speculer0Data { get; set; }
+                    public class Speculer0
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+
+                        public void ReadSpeculer0Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Speculer0(float Input_R, float Input_G, float Input_B)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                        }
+
+                        public Speculer0()
+                        {
+                            R = 1;
+                            G = 1;
+                            B = 1;
+                        }
+                    }
+
+                    public int UnknownData3 { get; set; } //Speculer0 Alpha (?)
+
+                    public Speculer1 Speculer1Data { get; set; }
+                    public class Speculer1
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+
+                        public void ReadSpeculer1Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Speculer1(float Input_R, float Input_G, float Input_B)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                        }
+
+                        public Speculer1()
+                        {
+                            R = 1;
+                            G = 1;
+                            B = 1;
+                        }
+                    }
+
+                    public int UnknownData4 { get; set; } //Speculer1 Alpha (?)
+
+                    public void ReadMaterialColor(BinaryReader br, byte[] BOM)
+                    {
+                        EndianConvert endianConvert = new EndianConvert(BOM);
+                        EmissionData.ReadEmissionColor(br, BOM);
+                        UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                        AmbientData.ReadAmbientColor(br, BOM);
+                        UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                        DiffuseData.ReadDiffuseColor(br, BOM);
+
+                        Speculer0Data.ReadSpeculer0Color(br, BOM);
+                        UnknownData3 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                        Speculer1Data.ReadSpeculer1Color(br, BOM);
+                        UnknownData4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    }
+
+                    public MaterialColor()
+                    {
+                        EmissionData = new Emission();
+                        UnknownData1 = 0;
+
+                        AmbientData = new Ambient();
+                        UnknownData2 = 0;
+
+                        DiffuseData = new Diffuse();
+
+                        Speculer0Data = new Speculer0();
+                        UnknownData3 = 0;
+
+                        Speculer1Data = new Speculer1();
+                        UnknownData4 = 0;
+                    }
+                }
+
+                //ConstantColor
+                public ConstantColor ConstantColorData { get; set; }
+                public class ConstantColor
+                {
+                    public Constant0 Constant0Data { get; set; }
+                    public class Constant0
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant0Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant0(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant0()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public Constant1 Constant1Data { get; set; }
+                    public class Constant1
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant1Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant1(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant1()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public Constant2 Constant2Data { get; set; }
+                    public class Constant2
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant2Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant2(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant2()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public Constant3 Constant3Data { get; set; }
+                    public class Constant3
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant3Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant3(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant3()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public Constant4 Constant4Data { get; set; }
+                    public class Constant4
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant4Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant4(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant4()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public Constant5 Constant5Data { get; set; }
+                    public class Constant5
+                    {
+                        public float R { get; set; }
+                        public float G { get; set; }
+                        public float B { get; set; }
+                        public float A { get; set; }
+
+                        public void ReadConstant5Color(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            R = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            G = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            B = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            A = BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public Constant5(float Input_R, float Input_G, float Input_B, float Input_A)
+                        {
+                            R = Input_R;
+                            G = Input_G;
+                            B = Input_B;
+                            A = Input_A;
+                        }
+
+                        public Constant5()
+                        {
+                            R = 0;
+                            G = 0;
+                            B = 0;
+                            A = 1;
+                        }
+                    }
+
+                    public void ReadConstantColor(BinaryReader br, byte[] BOM)
+                    {
+                        Constant0Data.ReadConstant0Color(br, BOM);
+                        Constant1Data.ReadConstant1Color(br, BOM);
+                        Constant2Data.ReadConstant2Color(br, BOM);
+                        Constant3Data.ReadConstant3Color(br, BOM);
+                        Constant4Data.ReadConstant4Color(br, BOM);
+                        Constant5Data.ReadConstant5Color(br, BOM);
+                    }
+
+                    public ConstantColor()
+                    {
+                        Constant0Data = new Constant0();
+                        Constant1Data = new Constant1();
+                        Constant2Data = new Constant2();
+                        Constant3Data = new Constant3();
+                        Constant4Data = new Constant4();
+                        Constant5Data = new Constant5();
+                    }
+                }
+
+
+
+
+
+
+
+                public void ReadMTOB(BinaryReader br, byte[] BOM)
+                {
+                    EndianConvert endianConvert = new EndianConvert(BOM);
+                    MTOB_Header = br.ReadChars(4);
+                    if (new string(MTOB_Header) != "MTOB") throw new Exception("不明なフォーマットです");
+
+                    Revision = endianConvert.Convert(br.ReadBytes(4));
+                    NameOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    if (NameOffset != 0)
+                    {
+                        long Pos = br.BaseStream.Position;
+
+                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                        //Move NameOffset
+                        br.BaseStream.Seek(NameOffset, SeekOrigin.Current);
+
+                        ReadByteLine readByteLine = new ReadByteLine(new List<byte>());
+                        readByteLine.ReadByte(br, 0x00);
+
+                        Name = new string(readByteLine.ConvertToCharArray());
+
+                        br.BaseStream.Position = Pos;
+                    }
+
+                    UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    IsFragmentLighting = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    UnknownData4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    DrawingLayer = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                    MaterialColors.ReadMaterialColor(br, BOM);
+                    ConstantColorData.ReadConstantColor(br, BOM);
+
+
+
+                }
+
+                public MTOB()
+                {
+                    MTOB_Header = "MTOB".ToArray();
+                    Revision = new List<byte>().ToArray();
+                    NameOffset = 0;
+                    UnknownData1 = 0;
+                    UnknownData2 = 0;
+                    IsFragmentLighting = 0;
+                    UnknownData4 = 0;
+                    DrawingLayer = 0;
+
+                    MaterialColors = new MaterialColor();
+                    ConstantColorData = new ConstantColor();
+
+
+
+
+                }
+
+
+
+
+
+
+                //public int UnknownData6 { get; set; }
+                //public int UnknownData7 { get; set; }
+                //public int UnknownData8 { get; set; }
+                //public int UnknownData9 { get; set; }
+            }
+
             //Shaders
+            public SHDR SHDRSection { get; set; } //0x01000080
+            public class SHDR
+            {
+                public string Name;
+
+                public char[] SHDR_Header { get; set; }
+                public byte[] Revision { get; set; }
+                public int NameOffset { get; set; }
+                public int UnknownData1 { get; set; }
+                public int UnknownData2 { get; set; }
+                public string VertexShaderName;
+                public int VertexShaderNameOffset { get; set; }
+                public int UnknownData3 { get; set; }
+
+                //Fragment Shader
+                public byte[] Color { get; set; } //4byte(?)
+                public int UnknownData4 { get; set; }
+                public int UnknownData5 { get; set; }
+                public int UnknownData6 { get; set; }
+                //public int LookupTableElementSetting { get; set; }
+
+
+                public byte Unknown1 { get; set; }
+                public byte Unknown2 { get; set; }
+                public byte Unknown3 { get; set; }
+
+                //Note : フレネルの設定 (プライマリおよびセカンダリ) は参照テーブルの指定が無い場合、たとえTrueであってもFalseになる (?)
+                public LookupTableElementSettings LookupTableElementSetting { get; set; }
+                public class LookupTableElementSettings
+                {
+                    public byte Bit;
+
+                    public bool IsGeometricFactor0 //0x8
+                    {
+                        get
+                        {
+                            return Convert.ToBoolean((Bit & 0x0F) & 0x08);
+                        }
+                    }
+
+                    public bool IsGeometricFactor1 //0x10
+                    {
+                        get
+                        {
+                            return Convert.ToBoolean((Bit & 0xF0) & 0x10);
+                        }
+                    }
+
+                    public bool IsClampSpc //0x01
+                    {
+                        get
+                        {
+                            return Convert.ToBoolean((Bit & 0x0F) & 0x08);
+                        }
+                    }
+
+                    public LookupTableElementSettings(byte Input)
+                    {
+                        Bit = Input;
+                    }
+                }
+
+
+                public int LayerConfigNum { get; set; }
+                public LayerType LayerTypes => (LayerType)LayerConfigNum;
+
+                public enum LayerType
+                {
+                    Config0 = 0, //スポット, 分布0, 反射R
+                    Config1 = 1, //スポット, 反射R, フレネル
+                    Config2 = 2, //分布0, 分布1, 反射R
+                    Config3 = 3,
+                    Config4 = 4,
+                    Config5 = 5,
+                    Config6 = 6,
+                    Config7 = 7
+                }
+
+                //Texture Environment Info
+                //
+
+
+                public void ReadSHDR(BinaryReader br, byte[] BOM)
+                {
+                    EndianConvert endianConvert = new EndianConvert(BOM);
+                    SHDR_Header = br.ReadChars(4);
+                    if (new string(SHDR_Header) != "SHDR") throw new Exception("不明なフォーマットです");
+
+                    Revision = endianConvert.Convert(br.ReadBytes(4));
+                    NameOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    if (NameOffset != 0)
+                    {
+                        long Pos = br.BaseStream.Position;
+
+                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                        //Move NameOffset
+                        br.BaseStream.Seek(NameOffset, SeekOrigin.Current);
+
+                        ReadByteLine readByteLine = new ReadByteLine(new List<byte>());
+                        readByteLine.ReadByte(br, 0x00);
+
+                        Name = new string(readByteLine.ConvertToCharArray());
+
+                        br.BaseStream.Position = Pos;
+                    }
+
+                    UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0); ;
+                    UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                    VertexShaderNameOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    if (VertexShaderNameOffset != 0)
+                    {
+                        long Pos = br.BaseStream.Position;
+
+                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                        //Move NameOffset
+                        br.BaseStream.Seek(VertexShaderNameOffset, SeekOrigin.Current);
+
+                        ReadByteLine readByteLine = new ReadByteLine(new List<byte>());
+                        readByteLine.ReadByte(br, 0x00);
+
+                        VertexShaderName = new string(readByteLine.ConvertToCharArray());
+
+                        br.BaseStream.Position = Pos;
+                    }
+
+                    UnknownData3 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                    //Fragment
+                    Color = endianConvert.Convert(br.ReadBytes(4));
+
+                    UnknownData4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    UnknownData5 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    UnknownData6 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+                    //LookupTableElementSetting = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    Unknown1 = br.ReadByte();
+                    Unknown2 = br.ReadByte();
+                    Unknown3 = br.ReadByte();
+                    LookupTableElementSetting = new LookupTableElementSettings(br.ReadByte());
+                    LayerConfigNum = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+
+
+
+
+
+
+
+                }
+
+                public SHDR()
+                {
+                    SHDR_Header = "SHDR".ToArray();
+                    Revision = new List<byte>().ToArray();
+                    NameOffset = 0;
+
+                    UnknownData1 = 0;
+                    UnknownData2 = 0;
+
+                    VertexShaderNameOffset = 0;
+
+                    UnknownData3 = 0;
+
+                    Color = new List<byte>().ToArray();
+
+                    UnknownData4 = 0;
+                    UnknownData5 = 0;
+                    UnknownData6 = 0;
+
+                    //LookupTableElementSetting = 0;
+
+                    Unknown1 = 0x00;
+                    Unknown2 = 0x00;
+                    Unknown3 = 0x00;
+                    LookupTableElementSetting = new LookupTableElementSettings(0x00);
+                    LayerConfigNum = 0;
+
+
+
+
+
+
+
+
+                }
+            }
+
+
             //Cameras
             //Lights
+
+            //Fogs
             public CFOG CFOGSection { get; set; }
             public class CFOG
             {
@@ -1606,6 +2406,9 @@ namespace CGFX_Viewer
 			{
                 CMDLSection = new CMDL();
                 TXOBSection = new TXOB();
+                LUTSSection = new LUTS();
+                MTOBSection = new MTOB();
+                SHDRSection = new SHDR();
                 CFOGSection = new CFOG();
                 CENVSection = new CENV();
 			}
@@ -1829,7 +2632,6 @@ namespace CGFX_Viewer
                 }
             }
 
-
             public class Matrix_BoundingBox
             {
                 public float M11 { get; set; }
@@ -1898,18 +2700,58 @@ namespace CGFX_Viewer
                 public int SOBJNameOffset { get; set; }
                 public int UnknownData2 { get; set; }
                 public int UnknownOffset1 { get; set; } //Array (float (?))
-                public int UnknownData4 { get; set; }
                 public int ShapeIndex { get; set; }
                 public int MaterialIndex { get; set; }
-                public int OwnerModelOffset { get; set; }
+
+                public UnknownColor UnknownColorSet { get; set; }
+                public class UnknownColor
+                {
+                    public byte R { get; set; }
+                    public byte G { get; set; }
+                    public byte B { get; set; }
+                    public byte A { get; set; }
+
+                    public Color GetColor()
+                    {
+                        return Color.FromArgb(A, R, G, B);
+                    }
+
+                    public void Read_UnknownColor(BinaryReader br)
+                    {
+                        R = br.ReadByte();
+                        G = br.ReadByte();
+                        B = br.ReadByte();
+                        A = br.ReadByte();
+                    }
+
+                    public UnknownColor(int Input_R, int Input_G, int Input_B, int Input_A)
+                    {
+                        R = (byte)Input_R;
+                        G = (byte)Input_G;
+                        B = (byte)Input_B;
+                        A = (byte)Input_A;
+                    }
+
+                    public UnknownColor()
+                    {
+                        R = 0;
+                        G = 0;
+                        B = 0;
+                        A = 0;
+                    }
+                }
+
                 public bool IsVisible { get; set; }
                 public byte RenderPriority { get; set; }
+                public short OwnerModelOffset { get; set; }
                 public short MeshNodeVisibilityIndex { get; set; }
+
+                public byte[] UnknownBytes { get; set; }
 
 				public int Unknown1 { get; set; }
 				public int Unknown2 { get; set; }
 				public int Unknown3 { get; set; }
-				public int Unknown4 { get; set; }
+				public int MeshIndex { get; set; }
 				public int Unknown5 { get; set; }
 				public int Unknown6 { get; set; }
 				public int Unknown7 { get; set; }
@@ -1947,6 +2789,12 @@ namespace CGFX_Viewer
                     public void Read_UnknownDataSection2(BinaryReader br, byte[] BOM)
                     {
                         EndianConvert endianConvert = new EndianConvert(BOM);
+                        //UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)).Reverse().ToArray(), 0);
+                        //UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)).Reverse().ToArray(), 0);
+                        //UnknownData3 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)).Reverse().ToArray(), 0);
+                        //UnknownData4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)).Reverse().ToArray(), 0);
+
+
                         UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                         UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                         UnknownData3 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
@@ -1980,18 +2828,23 @@ namespace CGFX_Viewer
 
                     UnknownData2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                     UnknownOffset1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-                    UnknownData4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                     ShapeIndex = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                     MaterialIndex = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-                    OwnerModelOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0); //This - ThisPosition
+
+                    //Color 4byte
+                    UnknownColorSet.Read_UnknownColor(br);
+
                     IsVisible = Converter.ByteToBoolean(br.ReadByte());
                     RenderPriority = br.ReadByte();
+                    OwnerModelOffset = BitConverter.ToInt16(endianConvert.Convert(br.ReadBytes(2)), 0); //This - ThisPosition
                     MeshNodeVisibilityIndex = BitConverter.ToInt16(endianConvert.Convert(br.ReadBytes(2)), 0);
 
-					Unknown1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                    UnknownBytes = br.ReadBytes(2);
+
+                    Unknown1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 					Unknown2 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 					Unknown3 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-					Unknown4 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+					MeshIndex = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 					Unknown5 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 					Unknown6 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
 					Unknown7 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
@@ -2053,17 +2906,22 @@ namespace CGFX_Viewer
                     SOBJNameOffset = 0;
                     UnknownData2 = 0;
                     UnknownOffset1 = 0;
-                    UnknownData4 = 0;
                     ShapeIndex = 0;
                     MaterialIndex = 0;
-                    OwnerModelOffset = 0;
+
+                    UnknownColorSet = new UnknownColor();
+
                     IsVisible = new bool();
                     RenderPriority = 0;
+                    OwnerModelOffset = 0;
                     MeshNodeVisibilityIndex = 0;
-					Unknown1 = 0;
+
+                    UnknownBytes = new List<byte>().ToArray();
+
+                    Unknown1 = 0;
 					Unknown2 = 0;
 					Unknown3 = 0;
-					Unknown4 = 0;
+					MeshIndex = 0;
 					Unknown5 = 0;
 					Unknown6 = 0;
 					Unknown7 = 0;
@@ -2433,8 +3291,10 @@ namespace CGFX_Viewer
                     public Stream Streams { get; set; }
                     public class Stream
                     {
-                        public int BufferObject { get; set; }
-                        public int LocationFlag { get; set; }
+                        //public int BufferObject { get; set; }
+                        //public int LocationFlag { get; set; }
+                        public CGFX_Viewer.VertexAttribute.Usage VertexAttributeUsageFlag { get; set; }
+                        public CGFX_Viewer.VertexAttribute.Flag VertexAttributeFlag { get; set; }
                         public int VertexStreamLength { get; set; }
                         public int VertexStreamOffset { get; set; }
                         public List<byte> VertexStreamList { get; set; }
@@ -2762,8 +3622,10 @@ namespace CGFX_Viewer
 						public void ReadStream(BinaryReader br, byte[] BOM)
 						{
                             EndianConvert endianConvert = new EndianConvert(BOM);
-                            BufferObject = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
-                            LocationFlag = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            //BufferObject = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            //LocationFlag = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            VertexAttributeUsageFlag = new CGFX_Viewer.VertexAttribute.Usage(BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0));
+                            VertexAttributeFlag = new CGFX_Viewer.VertexAttribute.Flag(BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0));
                             VertexStreamLength = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                             VertexStreamOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
                             if (VertexStreamOffset != 0)
@@ -2842,67 +3704,139 @@ namespace CGFX_Viewer
                                 br.BaseStream.Position = Pos;
                             }
 
-                            if (VertexStreamOffset == 0)
+                            if (VertexAttributeFlag.FlagTypes == CGFX_Viewer.VertexAttribute.Flag.FlagType.Interleave)
                             {
-                                int AllComponentLength = 0;
-                                foreach (var tr in VertexStreams) AllComponentLength += tr.Components.ComponentCount * tr.Components.GetFormatTypeLength();
-                                var Count = MemoryArea / AllComponentLength;
-
-                                br.BaseStream.Position = Pos1;
-
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-
-                                //Move NameOffset
-                                br.BaseStream.Seek(LocationAddress, SeekOrigin.Current);
-
-                                for (int iu = 0; iu < Count; iu++)
+                                //Interleave
+                                if (VertexStreamOffset == 0)
                                 {
-                                    Polygon polygon1 = new Polygon();
+                                    int AllComponentLength = 0;
+                                    foreach (var tr in VertexStreams) AllComponentLength += tr.Components.ComponentCount * tr.Components.GetFormatTypeLength();
+                                    var Count = MemoryArea / AllComponentLength;
 
-                                    foreach (var h in VertexStreams)
+                                    br.BaseStream.Position = Pos1;
+
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                                    //Move NameOffset
+                                    br.BaseStream.Seek(LocationAddress, SeekOrigin.Current);
+
+                                    for (int iu = 0; iu < Count; iu++)
                                     {
-                                        var g = h.VertexAttributeFlag;
+                                        Polygon polygon1 = new Polygon();
 
-                                        int CompCount = h.Components.GetFormatTypeLength();
+                                        foreach (var h in VertexStreams)
+                                        {
+                                            //var g = h.VertexAttributeFlag;
 
-                                        if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Position)
-                                        {
-                                            polygon1.Vertex = Converter.ByteArrayToPoint3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                                            int CompCount = h.Components.GetFormatTypeLength();
+
+                                            if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Position)
+                                            {
+                                                polygon1.Vertex = Converter.ByteArrayToPoint3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Normal)
+                                            {
+                                                polygon1.Normal = Converter.ByteArrayToVector3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Tangent)
+                                            {
+                                                return;
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate0)
+                                            {
+                                                polygon1.TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate1)
+                                            {
+                                                polygon1.TexCoord2 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate2)
+                                            {
+                                                polygon1.TexCoord3 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                                            }
+                                            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Color)
+                                            {
+                                                polygon1.ColorData = new Polygon.Color(br.ReadByte(), br.ReadByte(), br.ReadByte(), br.ReadByte());
+                                            }
                                         }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Normal)
-                                        {
-                                            polygon1.Normal = Converter.ByteArrayToVector3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
-                                        }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Tangent)
-                                        {
-                                            return;
-                                        }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate0)
-                                        {
-                                            polygon1.TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
-                                        }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate1)
-                                        {
-                                            polygon1.TexCoord2 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
-                                        }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate2)
-                                        {
-                                            polygon1.TexCoord3 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
-                                        }
-                                        else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Color)
-                                        {
-                                            polygon1.ColorData = new Polygon.Color(br.ReadByte(), br.ReadByte(), br.ReadByte(), br.ReadByte());
-                                        }
+
+                                        PolygonList.Add(polygon1);
                                     }
 
-                                    PolygonList.Add(polygon1);
+                                }
+                                if (VertexStreamOffset != 0)
+                                {
+                                    var f = VertexStreamLength / VertexDataEntrySize;
                                 }
 
                             }
-                            if (VertexStreamOffset != 0)
+
+                            if (VertexAttributeFlag.FlagTypes == CGFX_Viewer.VertexAttribute.Flag.FlagType.VertexParam)
                             {
-                                var f = VertexStreamLength / VertexDataEntrySize;
+                                
                             }
+
+                            //if (VertexStreamOffset == 0)
+                            //{
+                            //    int AllComponentLength = 0;
+                            //    foreach (var tr in VertexStreams) AllComponentLength += tr.Components.ComponentCount * tr.Components.GetFormatTypeLength();
+                            //    var Count = MemoryArea / AllComponentLength;
+
+                            //    br.BaseStream.Position = Pos1;
+
+                            //    br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                            //    //Move NameOffset
+                            //    br.BaseStream.Seek(LocationAddress, SeekOrigin.Current);
+
+                            //    for (int iu = 0; iu < Count; iu++)
+                            //    {
+                            //        Polygon polygon1 = new Polygon();
+
+                            //        foreach (var h in VertexStreams)
+                            //        {
+                            //            //var g = h.VertexAttributeFlag;
+
+                            //            int CompCount = h.Components.GetFormatTypeLength();
+
+                            //            if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Position)
+                            //            {
+                            //                polygon1.Vertex = Converter.ByteArrayToPoint3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Normal)
+                            //            {
+                            //                polygon1.Normal = Converter.ByteArrayToVector3D(new byte[][] { br.ReadBytes(CompCount), br.ReadBytes(CompCount), br.ReadBytes(CompCount) });
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Tangent)
+                            //            {
+                            //                return;
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate0)
+                            //            {
+                            //                polygon1.TexCoord = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate1)
+                            //            {
+                            //                polygon1.TexCoord2 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.TextureCoordinate2)
+                            //            {
+                            //                polygon1.TexCoord3 = new Polygon.TextureCoordinate(BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0), BitConverter.ToSingle(endianConvert.Convert(br.ReadBytes(CompCount)), 0));
+                            //            }
+                            //            else if (h.VertexAttributeUsageFlag.UsageTypes == CGFX_Viewer.VertexAttribute.Usage.UsageType.Color)
+                            //            {
+                            //                polygon1.ColorData = new Polygon.Color(br.ReadByte(), br.ReadByte(), br.ReadByte(), br.ReadByte());
+                            //            }
+                            //        }
+
+                            //        PolygonList.Add(polygon1);
+                            //    }
+
+                            //}
+                            //if (VertexStreamOffset != 0)
+                            //{
+                            //    var f = VertexStreamLength / VertexDataEntrySize;
+                            //}
 
                             ////int q = VertexStreamLength / VertexDataEntrySize;
 
@@ -2910,8 +3844,10 @@ namespace CGFX_Viewer
 
                         public Stream()
 						{
-                            BufferObject = 0;
-                            LocationFlag = 0;
+                            //BufferObject = 0;
+                            //LocationFlag = 0;
+                            VertexAttributeUsageFlag = new CGFX_Viewer.VertexAttribute.Usage(-1);
+                            VertexAttributeFlag = new CGFX_Viewer.VertexAttribute.Flag(-1);
                             VertexStreamLength = 0;
                             VertexStreamOffset = 0;
                             VertexStreamList = new List<byte>();
@@ -3219,6 +4155,54 @@ namespace CGFX_Viewer
             public NativeDataSection NativeDataSections { get; set; }
             public class NativeDataSection
             {
+                public CMDL CMDL_Native { get; set; }
+                public class CMDL
+                {
+                    public MaterialNameSet MaterialName_Set { get; set; }
+                    public class MaterialNameSet
+                    {
+                        public string Name;
+                        public int NameOffset { get; set; }
+                        public int UnknownData1 { get; set; }
+
+                        public void ReadMaterialNameSet(BinaryReader br, byte[] BOM)
+                        {
+                            EndianConvert endianConvert = new EndianConvert(BOM);
+                            NameOffset = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                            if (NameOffset != 0)
+                            {
+                                long Pos = br.BaseStream.Position;
+
+                                br.BaseStream.Seek(-4, SeekOrigin.Current);
+
+                                //Move NameOffset
+                                br.BaseStream.Seek(NameOffset, SeekOrigin.Current);
+
+                                ReadByteLine readByteLine = new ReadByteLine(new List<byte>());
+                                readByteLine.ReadByte(br, 0x00);
+
+                                Name = new string(readByteLine.ConvertToCharArray());
+
+                                br.BaseStream.Position = Pos;
+                            }
+
+                            UnknownData1 = BitConverter.ToInt32(endianConvert.Convert(br.ReadBytes(4)), 0);
+                        }
+
+                        public MaterialNameSet()
+                        {
+                            NameOffset = 0;
+                            UnknownData1 = 0;
+                        }
+                    }
+
+
+                    public CMDL()
+                    {
+                        MaterialName_Set = new MaterialNameSet();
+                    }
+                }
+
                 public CFOG CFOG_Native { get; set; }
                 public class CFOG
                 {
@@ -3272,559 +4256,618 @@ namespace CGFX_Viewer
 
                 public NativeDataSection()
                 {
+                    CMDL_Native = new CMDL();
                     CFOG_Native = new CFOG();
                 }
             }
 
             public void Reader(BinaryReader br, byte[] BOM)
 			{
-                var f2_s0 = Flag.GetF2_S0();
+                //var f2_s0 = Flag.GetF2_S0();
+                if (Flag.IdentFlag == null)
+                {
+                    //No Identification Flag
 
-                if (Flag.GetF3() == Flags.F3.t0)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
-                        {
-                            char[] ty = br.ReadChars(4);
-                            br.BaseStream.Seek(-4, SeekOrigin.Current);
-                            if (new string(ty) == "CENV")
-                            {
-                                //CENV
-                                CGFXSectionData.CENVSection.Read_CENV(br, BOM);
-                            }
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                    //[Material Name Set]
+                    //Name Offset, int (0x4) => MaterialName
+                    //Unknown, int (0x4)
 
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4)
-                    {
-                        //Color (?)
-                        NativeDataSection.CFOG.ColorData colorData = new NativeDataSection.CFOG.ColorData();
-                        colorData.ReadColorData(br, BOM);
-                        NativeDataSections.CFOG_Native.Color_Data = colorData;
-                    }
-                }
-                if (Flag.GetF3() == Flags.F3.t1)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
-                            {
-                                //SOBJ
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
-                            {
-                                //SOBJ
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t2)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
-                            {
-                                //SOBJ
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t3)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t4)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
-                            {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "MTOB")
-                                {
-                                    //MTOB
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t5)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
-                    {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
-                            {
-                                //UserData(String)
-                                UserData userData = new UserData(UserData.UserDataType.String);
-                                userData.String_Data.ReadUserDataStringList(br, BOM);
+                    NativeDataSection.CMDL.MaterialNameSet materialNameSet = new NativeDataSection.CMDL.MaterialNameSet();
+                    materialNameSet.ReadMaterialNameSet(br, BOM);
+                    NativeDataSections.CMDL_Native.MaterialName_Set = materialNameSet;
 
-                                UserData.Type = UserData.UserDataType.String;
-                                UserData = userData;
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1)
-                            {
-                                //SOBJ
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
-                    }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    //NativeDataSections.CMDL_Native.MaterialName_Set.ReadMaterialNameSet(br, BOM);
                 }
-                if (Flag.GetF3() == Flags.F3.t6)
+                else if (Flag.IdentFlag != null)
                 {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                    if (Flag.GetF3() == Flags.F3.t0)
                     {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
                         {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
                             {
-                                //UserData(Int32)
-                                UserData userData = new UserData(UserData.UserDataType.Int32);
-                                userData.Int32_Data.ReadUserDataInt32List(br, BOM);
+                                char[] ty = br.ReadChars(4);
+                                br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                if (new string(ty) == "CENV")
+                                {
+                                    //CENV
+                                    CGFXSectionData.CENVSection.Read_CENV(br, BOM);
+                                }
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
 
-                                UserData.Type = UserData.UserDataType.Int32;
-                                UserData = userData;
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4)
-                            {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "TXOB")
-                                {
-                                    //TXOB(Texture)
-                                    CGFXSectionData.TXOBSection.ReadTXOB(br, new byte[] { 0xFF, 0xFE });
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
                         }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2)
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4)
                         {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1)
-                            {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "TXOB")
-                                {
-                                    //TXOB(Texture:Shader)
-                                    CGFXSectionData.TXOBSection.ReadTXOB(br, new byte[] { 0xFF, 0xFE });
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            //Color (?)
+                            NativeDataSection.CFOG.ColorData colorData = new NativeDataSection.CFOG.ColorData();
+                            colorData.ReadColorData(br, BOM);
+                            NativeDataSections.CFOG_Native.Color_Data = colorData;
                         }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
                     }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t7)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                    if (Flag.GetF3() == Flags.F3.t1)
                     {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
                         {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10)
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
                             {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "CCAM")
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
                                 {
-                                    //CCAM
+                                    //SOBJ
                                 }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
                             }
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2)
                             {
-                                //CMDL(Skeletal)
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "CMDL")
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
                                 {
-                                    CGFXSectionData.CMDLSection.ReadCMDL(br, BOM);
+                                    //SOBJ
                                 }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
                             }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
                         }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3)
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
+                    if (Flag.GetF3() == Flags.F3.t2)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
                         {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
                             {
-                                //Type(?)
-                                if (Flag.GetF1() == Flags.F1.t1)
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                                {
+                                    //SOBJ
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        }
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
+                    if (Flag.GetF3() == Flags.F3.t3)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                        {
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                                {
+                                    //LUTS
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "LUTS")
+                                    {
+                                        //MTOB
+                                        CGFXSectionData.LUTSSection.ReadLUTS(br, BOM);
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        }
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
+                    if (Flag.GetF3() == Flags.F3.t4)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                        {
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
                                 {
                                     char[] ty = br.ReadChars(4);
                                     br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                    if (new string(ty) == "CHLT")
+                                    if (new string(ty) == "MTOB")
                                     {
-                                        //CHLT
+                                        //MTOB
+                                        CGFXSectionData.MTOBSection.ReadMTOB(br, BOM);
                                     }
                                 }
-                                if (Flag.GetF1() == Flags.F1.t2)
-                                {
-                                    char[] ty = br.ReadChars(4);
-                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                    if (new string(ty) == "CVLT")
-                                    {
-                                        //CVLT
-                                    }
-                                }
-                                if (Flag.GetF1() == Flags.F1.t4)
-                                {
-                                    char[] ty = br.ReadChars(4);
-                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                    if (new string(ty) == "CALT")
-                                    {
-                                        //CALT
-                                    }
-                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
                             }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
                         }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2)
-                            {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "CFOG")
-                                {
-                                    //CFOG
-                                    CGFXSectionData.CFOGSection.ReadCFOG(br, BOM);
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2)
-                            {
-                                //CMDL(Primitive)
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "CMDL")
-                                {
-                                    CGFXSectionData.CMDLSection.ReadCMDL(br, BOM);
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11)
-                        {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2)
-                            {
-                                //Type(?)
-                                if (Flag.GetF1() == Flags.F1.t0)
-                                {
-                                    char[] ty = br.ReadChars(4);
-                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                    if (new string(ty) == "CFLT")
-                                    {
-                                        //CFLT
-                                    }
-                                }
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
-                        }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
                     }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
-                }
-                if (Flag.GetF3() == Flags.F3.t8)
-                {
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                    if (Flag.GetF3() == Flags.F3.t5)
                     {
-                        //Section
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
                         {
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
                             {
-                                //UserData(Float)
-                                UserData userData = new UserData(UserData.UserDataType.RealNumber);
-                                userData.RealNumber_Data.ReadUserDataList(br, BOM, UserData.RealNumber.RealNumberType.Float);
-
-                                UserData.Type = UserData.UserDataType.RealNumber;
-                                UserData = userData;
-                            }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t1)
-                            {
-                                char[] ty = br.ReadChars(4);
-                                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                                if (new string(ty) == "SHDR")
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
                                 {
-                                    //SHDR
+                                    //UserData(String)
+                                    UserData userData = new UserData(UserData.UserDataType.String);
+                                    userData.String_Data.ReadUserDataStringList(br, BOM);
+
+                                    UserData.Type = UserData.UserDataType.String;
+                                    UserData = userData;
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1)
+                                {
+                                    //SOBJ
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        }
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
+                    if (Flag.GetF3() == Flags.F3.t6)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                        {
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                                {
+                                    //UserData(Int32)
+                                    UserData userData = new UserData(UserData.UserDataType.Int32);
+                                    userData.Int32_Data.ReadUserDataInt32List(br, BOM);
+
+                                    UserData.Type = UserData.UserDataType.Int32;
+                                    UserData = userData;
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4)
+                                {
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "TXOB")
+                                    {
+                                        //TXOB(Texture)
+                                        CGFXSectionData.TXOBSection.ReadTXOB(br, new byte[] { 0xFF, 0xFE });
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1)
+                                {
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "TXOB")
+                                    {
+                                        //TXOB(Texture:Shader)
+                                        CGFXSectionData.TXOBSection.ReadTXOB(br, new byte[] { 0xFF, 0xFE });
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        }
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
+                    if (Flag.GetF3() == Flags.F3.t7)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                        {
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10)
+                                {
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "CCAM")
+                                    {
+                                        //CCAM
+                                    }
                                 }
                             }
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
-                            if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                                {
+                                    //CMDL(Skeletal)
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "CMDL")
+                                    {
+                                        CGFXSectionData.CMDLSection.ReadCMDL(br, BOM);
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                                {
+                                    //Type(?)
+                                    if (Flag.GetF1() == Flags.F1.t1)
+                                    {
+                                        char[] ty = br.ReadChars(4);
+                                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                        if (new string(ty) == "CHLT")
+                                        {
+                                            //CHLT
+                                        }
+                                    }
+                                    if (Flag.GetF1() == Flags.F1.t2)
+                                    {
+                                        char[] ty = br.ReadChars(4);
+                                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                        if (new string(ty) == "CVLT")
+                                        {
+                                            //CVLT
+                                        }
+                                    }
+                                    if (Flag.GetF1() == Flags.F1.t4)
+                                    {
+                                        char[] ty = br.ReadChars(4);
+                                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                        if (new string(ty) == "CALT")
+                                        {
+                                            //CALT
+                                        }
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                                {
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "CFOG")
+                                    {
+                                        //CFOG
+                                        CGFXSectionData.CFOGSection.ReadCFOG(br, BOM);
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                                {
+                                    //CMDL(Primitive)
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "CMDL")
+                                    {
+                                        CGFXSectionData.CMDLSection.ReadCMDL(br, BOM);
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2)
+                                {
+                                    //Type(?)
+                                    if (Flag.GetF1() == Flags.F1.t0)
+                                    {
+                                        char[] ty = br.ReadChars(4);
+                                        br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                        if (new string(ty) == "CFLT")
+                                        {
+                                            //CFLT
+                                        }
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
                         }
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
-                        if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
                     }
-                    if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    if (Flag.GetF3() == Flags.F3.t8)
+                    {
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t0)
+                        {
+                            //Section
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t1)
+                            {
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t0)
+                                {
+                                    //UserData(Float)
+                                    UserData userData = new UserData(UserData.UserDataType.RealNumber);
+                                    userData.RealNumber_Data.ReadUserDataList(br, BOM, UserData.RealNumber.RealNumberType.Float);
+
+                                    UserData.Type = UserData.UserDataType.RealNumber;
+                                    UserData = userData;
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t1)
+                                {
+                                    char[] ty = br.ReadChars(4);
+                                    br.BaseStream.Seek(-4, SeekOrigin.Current);
+                                    if (new string(ty) == "SHDR")
+                                    {
+                                        //SHDR
+                                        CGFXSectionData.SHDRSection.ReadSHDR(br, BOM);
+                                    }
+                                }
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t2) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t3) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t4) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t5) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t6) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t7) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t8) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t9) return;
+                                if (Flag.GetF0_S1() == Flags.F0_S1.t10) return;
+                            }
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t2) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t3) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t4) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t5) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t6) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t7) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t8) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t9) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t10) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t11) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t12) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t13) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t14) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t15) return;
+                            if (Flag.GetF0_S0() == Flags.F0_S0.t16) return;
+                        }
+                        if (Flag.GetF2_S1() == Flags.F2_S1.t4) return;
+                    }
                 }
+
             }
 
             public CGFXData(byte[] IdentificationFlag)

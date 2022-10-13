@@ -67,12 +67,20 @@ namespace CGFX_Viewer
                         if (sw == "Model")
                         {
                             var lt = r.CGFXData.CGFXSectionData.CMDLSection.meshDatas.Select(x => new TreeNode(x.SOBJData.Meshes.MeshName)).ToList();
+                            var mt = r.CGFXData.CGFXSectionData.CMDLSection.MTOB_DICT.DICT_Entries.Select(x => new TreeNode(x.CGFXData.CGFXSectionData.MTOBSection.Name)).ToList();
                             //var nt = r.CGFXData.CGFXSectionData.CMDLSection.shapeDatas.Select(x => new TreeNode(x.SOBJData.Shapes.Name)).ToList();
                             var nt = r.CGFXData.CGFXSectionData.CMDLSection.shapeDatas.Select((x, Id) => new { Id, x }).Select(x => new TreeNode(x.Id.ToString())).ToList();
 
+                            var mtName = r.CGFXData.CGFXSectionData.CMDLSection.UnknownDICT.DICT_Entries.Select(x => new TreeNode(x.CGFXData.NativeDataSections.CMDL_Native.MaterialName_Set.Name)).ToList();
+
                             TreeNode treeNode = new TreeNode(r.Name);
                             treeNode.Nodes.Add(new TreeNode("Mesh", lt.ToArray()));
+
+                            treeNode.Nodes.Add(new TreeNode("Material", mt.ToArray()));
+
                             treeNode.Nodes.Add(new TreeNode("Shape", nt.ToArray()));
+
+                            treeNode.Nodes.Add(new TreeNode("LinkedMaterial", mtName.ToArray()));
 
                             EntryNameList.Add(treeNode);
                         }
@@ -120,24 +128,44 @@ namespace CGFX_Viewer
                 }
                 if (Set.Length == 3)
                 {
+                    // "Model", "Textures", "LUTS", "Materials", "Shaders", "Cameras", "Lights", "Fog", "Environments", "Skeleton_Animations", "Texture_Animations", "Visibility_Animations", "Camera_Animations", "Light_Animations", "Fog_Animations", "Emitters" 
+
                     var ht = CGFX.DICTAndSectionData[Set[1]].DICT_Entries.Find(x => x.Name == Set[2]).CGFXData.CGFXSectionData;
 
                     if (Set[1] == "Model")
                     {
-                        //Dictionary<int, List<ModelVisual3D>> CMDLList = new Dictionary<int, List<ModelVisual3D>>();
-
                         var Models = ht.CMDLSection;
                         propertyGrid3.SelectedObject = new CGFXPropertyGridSet.CMDL_PropertyGrid(Models);
-                        foreach (var shape in Models.shapeDatas)
-                        {
-                            List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>> indexStreamCtrs = new List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>>();
 
-                            var Shape = shape.SOBJData.Shapes;
+
+
+                        //var MaterialNameSetList = Models.UnknownDICT.DICT_Entries.Select(x => x.CGFXData.NativeDataSections.CMDL_Native.MaterialName_Set);
+
+                        //List<Bitmap> BitmapList = new List<Bitmap>();
+                        //for (int i = 0; i < MaterialNameSetList.ToList().Count; i++)
+                        //{
+                        //    Bitmap tex = CGFX.DICTAndSectionData["Textures"].DICT_Entries.Find(x => x.Name == MaterialNameSetList.ToList()[i].Name).CGFXData.CGFXSectionData.TXOBSection.TXOB_Bitmap;
+                        //    BitmapList.Add(tex);
+                        //}
+
+                        //Get Texture (Bitmap)
+                        List<Bitmap> CMDL_BitmapList = CGFX.DICTAndSectionData["Textures"].DICT_Entries.Select(x => x.CGFXData.CGFXSectionData.TXOBSection.TXOB_Bitmap).ToList();
+
+                        foreach (var qs in Models.meshDatas)
+                        {
+                            int ShapeID = qs.SOBJData.Meshes.ShapeIndex;
+                            var Shape = Models.shapeDatas[ShapeID].SOBJData.Shapes;
+
+                            List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>> indexStreamCtrs = new List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>>();
                             foreach (var PrimitiveSet in Shape.primitiveSets)
                             {
                                 var g = PrimitiveSet.Primitives.Select(x => x.IndexStreamCtrList).ToList();
                                 indexStreamCtrs.Add(g);
                             }
+
+                            //FindTexture (TODO : Find from TextureID [MTOB(?)])
+                            int MtlId = qs.SOBJData.Meshes.MaterialIndex;
+                            Bitmap Texture = CMDL_BitmapList[MtlId];
 
                             foreach (var VertexAttr in Shape.VertexAttributes.Select((value, i) => new { Value = value, Index = i }))
                             {
@@ -154,10 +182,14 @@ namespace CGFX_Viewer
 
                                 MeshGeometry3D meshGeometry3D = meshBuilder.ToMesh(true);
 
-                                //BitmapImage bitmapImage = (BitmapImage)Imaging.CreateBitmapSourceFromHBitmap(ht.TXOBSection.TXOB_Bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                                //Material material = MaterialHelper.CreateImageMaterial(bitmapImage, 1, true);
+                                //Create Texture
+                                BitmapImage bitmapImage = new BitmapImage();
+                                bitmapImage.BeginInit();
+                                bitmapImage.StreamSource = CGFXHelper.BitmapToMemoryStream(Texture);
+                                bitmapImage.EndInit();
+                                Material material = MaterialHelper.CreateImageMaterial(bitmapImage, 100, true);
 
-                                Material material = MaterialHelper.CreateMaterial(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00));
+                                //Material material = MaterialHelper.CreateMaterial(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00));
 
                                 var m3dGrp = new Model3DGroup();
                                 m3dGrp.Children.Add(new GeometryModel3D { Geometry = meshGeometry3D, Material = material, BackMaterial = material });
@@ -185,6 +217,81 @@ namespace CGFX_Viewer
                                 #endregion
                             }
                         }
+
+                        #region Backup
+                        //var Models = ht.CMDLSection;
+                        //propertyGrid3.SelectedObject = new CGFXPropertyGridSet.CMDL_PropertyGrid(Models);
+
+                        ////Get Texture (Bitmap)
+                        //var MeshInfoList = Models.meshDatas.Select(x => x.SOBJData.Meshes).ToList();
+                        //List<Bitmap> CMDL_BitmapList = CGFX.DICTAndSectionData["Textures"].DICT_Entries.Select(x => x.CGFXData.CGFXSectionData.TXOBSection.TXOB_Bitmap).ToList();
+
+                        //foreach (var shape in Models.shapeDatas.Select((value, i) => new { Value = value, Index = i }))
+                        //{
+                        //    List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>> indexStreamCtrs = new List<List<List<CGFXFormat.SOBJ.Shape.PrimitiveSet.Primitive.IndexStreamCtr>>>();
+
+                        //    var Shape = shape.Value.SOBJData.Shapes;
+                        //    foreach (var PrimitiveSet in Shape.primitiveSets)
+                        //    {
+                        //        var g = PrimitiveSet.Primitives.Select(x => x.IndexStreamCtrList).ToList();
+                        //        indexStreamCtrs.Add(g);
+                        //    }
+
+                        //    //FindTexture
+                        //    int MtlId = MeshInfoList[shape.Index].MaterialIndex;
+                        //    Bitmap Texture = CMDL_BitmapList[MtlId];
+
+                        //    foreach (var VertexAttr in Shape.VertexAttributes.Select((value, i) => new { Value = value, Index = i }))
+                        //    {
+                        //        MeshBuilder meshBuilder = new MeshBuilder(true, true, true);
+
+                        //        foreach (var Indice in indexStreamCtrs[0][0][0].FaceArray) meshBuilder.TriangleIndices.Add(Indice);
+
+                        //        foreach (var ym in VertexAttr.Value.Streams.PolygonList)
+                        //        {
+                        //            meshBuilder.Positions.Add(ym.Vertex);
+                        //            meshBuilder.Normals.Add(ym.Normal);
+                        //            meshBuilder.TextureCoordinates.Add(ym.TexCoord.ToPoint());
+                        //        }
+
+                        //        MeshGeometry3D meshGeometry3D = meshBuilder.ToMesh(true);
+
+                        //        //Create Texture
+                        //        BitmapImage bitmapImage = new BitmapImage();
+                        //        bitmapImage.BeginInit();
+                        //        bitmapImage.StreamSource = CGFXHelper.BitmapToMemoryStream(Texture);
+                        //        bitmapImage.EndInit();
+                        //        Material material = MaterialHelper.CreateImageMaterial(bitmapImage, 100, true);
+
+                        //        //Material material = MaterialHelper.CreateMaterial(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00));
+
+                        //        var m3dGrp = new Model3DGroup();
+                        //        m3dGrp.Children.Add(new GeometryModel3D { Geometry = meshGeometry3D, Material = material, BackMaterial = material });
+
+                        //        ModelVisual3D m = new ModelVisual3D { Content = m3dGrp };
+                        //        //mList.Add(m);
+
+                        //        //表示
+                        //        render.MainViewPort.Children.Add(m);
+
+                        //        #region Point3D Only
+                        //        //foreach (var ym in VertexAttr.Value.Streams.PolygonList)
+                        //        //{
+                        //        //    List<Point3D> point3Ds = new List<Point3D>();
+                        //        //    point3Ds.Add(ym.Vertex);
+
+                        //        //    PointsVisual3D pointsVisual3D = new PointsVisual3D();
+                        //        //    pointsVisual3D.Points = new Point3DCollection(point3Ds);
+                        //        //    pointsVisual3D.Color = Colors.Blue;
+                        //        //    pointsVisual3D.Size = 5;
+
+                        //        //    render.MainViewPort.Children.Add(pointsVisual3D);
+                        //        //    render.UpdateLayout();
+                        //        //}
+                        //        #endregion
+                        //    }
+                        //}
+                        #endregion
                     }
                     if (Set[1] == "Textures")
                     {
@@ -192,10 +299,19 @@ namespace CGFX_Viewer
                         pictureBox1.Image = Textures.TXOB_Bitmap;
                         propertyGrid2.SelectedObject = new CGFXPropertyGridSet.TXOB_PropertyGrid(Textures);
                     }
+                    if (Set[1] == "LUTS") return;
+                    if (Set[1] == "Materials") return;
+                    if (Set[1] == "Shaders") return;
+                    if (Set[1] == "Cameras") return;
+                    if (Set[1] == "Lights") return;
                     if (Set[1] == "Fog")
                     {
                         var fogs = ht.CFOGSection;
                         propertyGrid1.SelectedObject = new CGFXPropertyGridSet.CFOG_PropertyGrid(fogs);
+                    }
+                    if (Set[1] == "Environments")
+                    {
+
                     }
                 }
                 if (Set.Length == 4)
@@ -212,12 +328,21 @@ namespace CGFX_Viewer
                         propertyGrid3.SelectedObject = null;
                         if (Set[3] == "Mesh")
                         {
-                            propertyGrid3.SelectedObject = Models.meshDatas.Find(x => x.SOBJData.Meshes.MeshName == Set[4]).SOBJData.Meshes;
+                            //propertyGrid3.SelectedObject = Models.meshDatas.Find(x => x.SOBJData.Meshes.MeshName == Set[4]).SOBJData.Meshes;
+                            propertyGrid3.SelectedObject = new CGFXPropertyGridSet.CMDL_MeshData_PropertyGrid(Models.meshDatas.Find(x => x.SOBJData.Meshes.MeshName == Set[4]));
+                        }
+                        if (Set[3] == "Material")
+                        {
+                            propertyGrid3.SelectedObject = Models.MTOB_DICT.DICT_Entries.Find(x => x.Name == Set[4]).CGFXData.CGFXSectionData.MTOBSection;
                         }
                         if (Set[3] == "Shape")
                         {
                             propertyGrid3.SelectedObject = Models.shapeDatas[Convert.ToInt32(Set[4])].SOBJData.Shapes;
                             var i = Models.shapeDatas[Convert.ToInt32(Set[4])].SOBJData.Shapes.VertexAttributes.Select(x => x.Streams.PolygonList).ToList();
+                        }
+                        if (Set[3] == "LinkedMaterial")
+                        {
+                            propertyGrid3.SelectedObject = Models.UnknownDICT.DICT_Entries.Find(x => x.Name == Set[4]).CGFXData.NativeDataSections.CMDL_Native.MaterialName_Set.Name;
                         }
                     }
                 }

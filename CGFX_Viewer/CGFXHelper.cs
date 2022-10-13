@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
 namespace CGFX_Viewer
@@ -134,7 +136,10 @@ namespace CGFX_Viewer
 
         public Flags(byte[] b)
 		{
-            IdentFlag = b;
+            //IdentFlag = b;
+            if (b == null) return;
+            if (b != null) IdentFlag = b;
+            if (b == new List<byte>().ToArray()) IdentFlag = b;
 		}
 
         public F0_S0 F0_S0Flag => GetF0_S0();
@@ -353,6 +358,7 @@ namespace CGFX_Viewer
         public class Flag
         {
             public int FlagNum { get; set; }
+            public FlagType FlagTypes => (FlagType)FlagNum;
 
             public Flag(int InputFlagTypeNum)
             {
@@ -417,6 +423,19 @@ namespace CGFX_Viewer
 		{
             return Convert.ToByte(Input);
 		}
+
+        //public static bool ShortToBoolean(short Input)
+        //{
+        //    bool b = new bool();
+        //    if (Input == 0) b = false;
+        //    if (Input == 1) b = true;
+        //    return b;
+        //}
+
+        //public static byte BooleanToShort(bool Input)
+        //{
+        //    return Convert.ToByte(Input);
+        //}
 
         /// <summary>
         /// 
@@ -630,6 +649,16 @@ namespace CGFX_Viewer
 
     public class CGFXHelper
     {
+        public static MemoryStream BitmapToMemoryStream(Bitmap bitmap)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+            //bitmap.Dispose();
+
+            return memoryStream;
+        }
+
+
         //public CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType
 
         //public static T Calc<T>(T Data, int Offset, float Scale, CGFXFormat.SOBJ.Shape.VertexAttribute.Stream.VertexStream.Component.FormatType formatType)
@@ -700,66 +729,66 @@ namespace CGFX_Viewer
         //}
 
 
-        public static int GetIndiceNum(List<int> FaceArray, int Num, List<Polygon> polygons)
-        {
-            int fe = -1;
-            if (Num < polygons.Count)
-            {
-                fe = Num;
-            }
-            else if (Num >= polygons.Count)
-            {
-                foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i }))
-                {
-                    if (Num == jr.Index)
-                    {
-                        int f = jr.Value;
-                        if (f < polygons.Count)
-                        {
-                            fe = f;
-                            break;
-                        }
-                        else
-                        {
-                            fe = GetIndiceNum(FaceArray, f, polygons);
-                            break;
-                        }
-                        //fe = jr.Value < FaceArray.Count ? jr.Value : GetIndiceNum(FaceArray, jr.Value);
-                        //break;
-                    }
-                    //if (Num >= FaceArray.Count)
-                    //{
-                    //    fe = GetIndiceNum(FaceArray, Num);
+                ////public static int GetIndiceNum(List<int> FaceArray, int Num, List<Polygon> polygons)
+                ////{
+                ////    int fe = -1;
+                ////    if (Num < polygons.Count)
+                ////    {
+                ////        fe = Num;
+                ////    }
+                ////    else if (Num >= polygons.Count)
+                ////    {
+                ////        foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i }))
+                ////        {
+                ////            if (Num == jr.Index)
+                ////            {
+                ////                int f = jr.Value;
+                ////                if (f < polygons.Count)
+                ////                {
+                ////                    fe = f;
+                ////                    break;
+                ////                }
+                ////                else
+                ////                {
+                ////                    fe = GetIndiceNum(FaceArray, f, polygons);
+                ////                    break;
+                ////                }
+                ////                //fe = jr.Value < FaceArray.Count ? jr.Value : GetIndiceNum(FaceArray, jr.Value);
+                ////                //break;
+                ////            }
+                ////            //if (Num >= FaceArray.Count)
+                ////            //{
+                ////            //    fe = GetIndiceNum(FaceArray, Num);
 
-                    //}
-                }
+                ////            //}
+                ////        }
 
-                return fe;
-                //fe = GetIndiceNum(FaceArray, Num);
+                ////        return fe;
+                ////        //fe = GetIndiceNum(FaceArray, Num);
 
-            }
-
-
+                ////    }
 
 
 
 
-            //foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i}))
-            //{
-            //    if (Num < FaceArray.Count)
-            //    {
-            //        fe = Num;
-            //        break;
-            //    }
-            //    if (Num >= FaceArray.Count)
-            //    {
-            //        fe = GetIndiceNum(FaceArray, Num);
 
-            //    }
-            //}
 
-            return fe;
-        }
+                ////    //foreach (var jr in FaceArray.Select((value, i) => new { Value = value, Index = i}))
+                ////    //{
+                ////    //    if (Num < FaceArray.Count)
+                ////    //    {
+                ////    //        fe = Num;
+                ////    //        break;
+                ////    //    }
+                ////    //    if (Num >= FaceArray.Count)
+                ////    //    {
+                ////    //        fe = GetIndiceNum(FaceArray, Num);
+
+                ////    //    }
+                ////    //}
+
+                ////    return fe;
+                ////}
 
 
         //public static int GetIndiceNum(List<int> FaceArray, int Num)

@@ -68,6 +68,7 @@
     <Compile Include="CGFXPropertyGridSet\CFOG_PropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\CGFX_CustomPropertyGridClass.cs" />
     <Compile Include="CGFXPropertyGridSet\CGFX_UserDataPropertyGrid.cs" />
+    <Compile Include="CGFXPropertyGridSet\CMDL_MeshData_PropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\CMDL_PropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\TXOB_PropertyGrid.cs" />
     <Compile Include="CGFX\TextureFormat\EFETextures.cs" />

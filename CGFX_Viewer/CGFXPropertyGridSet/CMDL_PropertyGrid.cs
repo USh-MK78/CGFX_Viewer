@@ -68,6 +68,10 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
         [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
         public CGFXFormat.Transform.Translate Translate { get; set; }
 
+        public CGFXFormat.Matrix.LocalMatrix Local_Matrix { get; set; }
+        public CGFXFormat.Matrix.WorldMatrix_Transform WorldMatrix_Transform { get; set; }
+
+
         //Mesh
         public int MeshSOBJEntries { get; set; } //0x4
         public int MeshSOBJListOffset { get; set; } //0x4
@@ -85,7 +89,9 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
 
         public int NumOfMTOB_DICTEntries { get; set; } //0x4
         public int MTOB_DICTOffset { get; set; } //0x4
-        //public DICT MTOB_DICT { get; set; }
+
+        [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
+        public CGFXFormat.DICT MTOB_DICT { get; set; }
 
         //Shape
         public int NumOfVertexInfoSOBJEntries_2 { get; set; } //0x4
@@ -95,9 +101,11 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
         //[Editor(typeof(CGFX_CustomPropertyGridClass.UserDataDictionaryEditor), typeof(UITypeEditor))]
         public List<CGFXFormat.CGFXSection.CMDL.ShapeData> shapeDataList { get => ShapeData_List; set => ShapeData_List = value; }
 
+        //UnknownDICT
         public int NumOfUnknownDICTEntries { get; set; }
         public int UnknownDICTOffset { get; set; }
-        //public DICT UnknownDICT { get; set; }
+        [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
+        public CGFXFormat.DICT UnknownDICT { get; set; }
 
         public bool IsVisible { get; set; } //0x1
         public bool IsNonuniformScalable { get; set; } //0x1
@@ -105,7 +113,7 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
 
         public byte[] UnknownData2 { get; set; }
         public int LayerID { get; set; }
-        public byte[] UnknownData4 { get; set; }
+        //public byte[] UnknownData4 { get; set; }
 
 
         public CMDL_PropertyGrid(CGFXFormat.CGFXSection.CMDL CMDLData)
@@ -123,20 +131,29 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
             Scale = CMDLData.Transform_Scale;
             Rotate = CMDLData.Transform_Rotate;
             Translate = CMDLData.Transform_Translate;
+            Local_Matrix = CMDLData.CMDL_4x4_Matrix;
+            WorldMatrix_Transform = CMDLData.CMDL_4x4_Matrix_Transform;
 
             //Scale, Rotate, Translate, Matrix... etc
+            //CMDLData.
+
 
             meshDataList = CMDLData.meshDatas;
+
             //MTOB
+            MTOB_DICT = CMDLData.MTOB_DICT;
+
             shapeDataList = CMDLData.shapeDatas;
+            
             //UnknownDICT
+            UnknownDICT = CMDLData.UnknownDICT;
 
             IsVisible = CMDLData.IsVisible;
             IsNonuniformScalable = CMDLData.IsNonuniformScalable;
             UnknownData3 = CMDLData.UnknownData3;
             UnknownData2 = CMDLData.UnknownData2;
             LayerID = CMDLData.LayerID;
-            UnknownData4 = CMDLData.UnknownData2;
+            //UnknownData4 = CMDLData.UnknownData2;
 
         }
 	}
