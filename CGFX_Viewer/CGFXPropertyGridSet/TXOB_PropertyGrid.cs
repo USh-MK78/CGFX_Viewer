@@ -69,7 +69,7 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
         public byte[] UnknownByte9 { get; set; }
         public byte[] UnknownByte10 { get; set; }
 
-        internal TXOB_PropertyGrid(CGFXFormat.CGFXSection.TXOB TXOBSection)
+        internal TXOB_PropertyGrid(CGFXFormat.CGFXSection.TXOB.Texture TXOBSection)
 		{
             TXOBName = TXOBSection.Name;
 
@@ -101,6 +101,11 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
             TextureDataOffset = TXOBSection.TextureDataOffset;
 
             TexData = TXOBSection.TexData;
+
+            UnknownByte7 = TXOBSection.UnknownByte7;
+            UnknownByte8 = TXOBSection.UnknownByte8;
+            UnknownByte9 = TXOBSection.UnknownByte9;
+            UnknownByte10 = TXOBSection.UnknownByte10;
         }
     }
 }

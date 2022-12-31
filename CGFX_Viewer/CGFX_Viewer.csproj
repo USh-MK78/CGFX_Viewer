@@ -43,6 +43,7 @@
     </Reference>
     <Reference Include="LibEveryFileExplorer">
       <HintPath>..\..\LibEveryFileExplorer.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -70,6 +71,7 @@
     <Compile Include="CGFXPropertyGridSet\CGFX_UserDataPropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\CMDL_MeshData_PropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\CMDL_PropertyGrid.cs" />
+    <Compile Include="CGFXPropertyGridSet\MTOB_PropertyGrid.cs" />
     <Compile Include="CGFXPropertyGridSet\TXOB_PropertyGrid.cs" />
     <Compile Include="CGFX\TextureFormat\EFETextures.cs" />
     <Compile Include="Form1.cs">
@@ -94,6 +96,44 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyGridForms\General\UserDataForm\UserDataEntryPropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\PrimitiveSetEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\PrimitiveSetEditorForm.Designer.cs">
+      <DependentUpon>PrimitiveSetEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\PrimitiveSet_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\IndexStreamCtr\IndexStreamCtrEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\IndexStreamCtr\IndexStreamCtrEditorForm.Designer.cs">
+      <DependentUpon>IndexStreamCtrEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\PrimitiveEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\PrimitiveEditorForm.Designer.cs">
+      <DependentUpon>PrimitiveEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\IndexStreamCtr\IndexStreamCtr_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\Primitive_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\ShapeData_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Param\Param_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Stream\Stream_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Stream\VertexStream\VertexStreamEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Stream\VertexStream\VertexStreamEditorForm.Designer.cs">
+      <DependentUpon>VertexStreamEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Stream\VertexStream\VertexStream_PropertyGrid.cs" />
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\VertexAttributeEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\VertexAttributeEditorForm.Designer.cs">
+      <DependentUpon>VertexAttributeEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\VertexAttribute_PropertyGrid.cs" />
     <Compile Include="UserControl1.xaml.cs">
       <DependentUpon>UserControl1.xaml</DependentUpon>
     </Compile>
@@ -115,6 +155,21 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\PrimitiveSetEditorForm.resx">
+      <DependentUpon>PrimitiveSetEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\IndexStreamCtr\IndexStreamCtrEditorForm.resx">
+      <DependentUpon>IndexStreamCtrEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PropertyGridForms\Section\CMDL\ShapeData\PrimitiveSet\Primitive\PrimitiveEditorForm.resx">
+      <DependentUpon>PrimitiveEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\Stream\VertexStream\VertexStreamEditorForm.resx">
+      <DependentUpon>VertexStreamEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PropertyGridForms\Section\CMDL\ShapeData\VertexAttribute\VertexAttributeEditorForm.resx">
+      <DependentUpon>VertexAttributeEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

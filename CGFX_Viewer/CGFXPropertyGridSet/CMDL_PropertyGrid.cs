@@ -52,13 +52,6 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
         public int CMDL_Offset_Animation_DICT { get; set; } //Null : 00 00 00 00
         //public DICT AnimationDICT { get; set; }
 
-        //public Transform.Scale Transform_Scale { get; set; }
-        //public Transform.Rotate Transform_Rotate { get; set; }
-        //public Transform.Translate Transform_Translate { get; set; }
-        //public Matrix.CFOG_4x4Matrix CMDL_4x4_Matrix { get; set; }
-        //public Matrix.CFOG_4x4Matrix_Transform CMDL_4x4_Matrix_Transform { get; set; }
-
-
         [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
         public CGFXFormat.Transform.Scale Scale { get; set; }
 
@@ -68,7 +61,10 @@ namespace CGFX_Viewer.CGFXPropertyGridSet
         [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
         public CGFXFormat.Transform.Translate Translate { get; set; }
 
+        [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
         public CGFXFormat.Matrix.LocalMatrix Local_Matrix { get; set; }
+
+        [TypeConverter(typeof(CGFX_CustomPropertyGridClass.CustomExpandableObjectSortTypeConverter))]
         public CGFXFormat.Matrix.WorldMatrix_Transform WorldMatrix_Transform { get; set; }
 
 
